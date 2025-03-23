@@ -281,7 +281,7 @@ class ZurbriggStyleCollapsibleFrame(QWidget):
         self.main_layout.addWidget(self.header)
         self.main_layout.addWidget(self.content_widget)
         
-        # Set size policy
+        # Ensure fixed position even when collapsed
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.content_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
@@ -389,29 +389,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.status_bar = QStatusBar()
             self.setStatusBar(self.status_bar)
             
-            # Create tab widget (basic UI component)
-            self.tab_widget = QTabWidget()
-            
-            # Create SavePlus Tab (basic UI component)
-            self.saveplus_tab = QWidget()
-            self.saveplus_layout = QVBoxLayout(self.saveplus_tab)
-            self.saveplus_layout.setContentsMargins(8, 8, 8, 8)
-            self.saveplus_layout.setSpacing(8)
-            
-            # Create Preferences Tab (basic UI component)
-            self.preferences_tab = QWidget()
-            self.preferences_layout = QVBoxLayout(self.preferences_tab)
-            self.preferences_layout.setContentsMargins(8, 8, 8, 8)
-            self.preferences_layout.setSpacing(10)
-            
-            # Add tabs to tab widget (basic UI component)
-            self.tab_widget.addTab(self.saveplus_tab, "SavePlus")
-            self.tab_widget.addTab(self.preferences_tab, "Preferences")
-            
-            # Add tab widget to main layout (basic UI component)
-            main_layout.addWidget(self.tab_widget)
-            
-            # --- SAVEPLUS TAB CONTENT ---
+            # --- CREATE HEADER ABOVE TABS ---
             
             # Create a modern header
             header_layout = QHBoxLayout()
@@ -446,26 +424,57 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             header_layout.addStretch()
             header_layout.addWidget(description)
             
-            # Add header to saveplus layout
+            # Add header to main layout
             header_container = QFrame()
             header_container.setFrameShape(QFrame.StyledPanel)
             header_container.setStyleSheet("QFrame { background-color: #f8f9fa; border-radius: 4px; }")
             header_container.setLayout(header_layout)
             
-            self.saveplus_layout.addWidget(header_container)
+            main_layout.addWidget(header_container)
             
             # Create a subtle separator
             separator = QFrame()
             separator.setFrameShape(QFrame.HLine)
             separator.setFrameShadow(QFrame.Sunken)
             separator.setStyleSheet("background-color: #e0e0e0; max-height: 1px;")
-            self.saveplus_layout.addWidget(separator)
+            main_layout.addWidget(separator)
+            main_layout.addSpacing(5)  # Add a small space after the separator
+            
+            # --- CREATE TABS ---
+            
+            # Create tab widget
+            self.tab_widget = QTabWidget()
+            
+            # Create SavePlus Tab
+            self.saveplus_tab = QWidget()
+            self.saveplus_layout = QVBoxLayout(self.saveplus_tab)
+            self.saveplus_layout.setContentsMargins(8, 8, 8, 8)
+            self.saveplus_layout.setSpacing(8)
+            
+            # Create Preferences Tab
+            self.preferences_tab = QWidget()
+            self.preferences_layout = QVBoxLayout(self.preferences_tab)
+            self.preferences_layout.setContentsMargins(8, 8, 8, 8)
+            self.preferences_layout.setSpacing(10)
+            
+            # Add tabs to tab widget
+            self.tab_widget.addTab(self.saveplus_tab, "SavePlus")
+            self.tab_widget.addTab(self.preferences_tab, "Preferences")
+            
+            # Add tab widget to main layout
+            main_layout.addWidget(self.tab_widget)
+            
+            # --- SAVEPLUS TAB CONTENT ---
             
             # Create container widget for scrollable content
             self.container_widget = QWidget()
+            # Set a fixed policy to ensure elements stay at the top
+            self.container_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            
             self.container_layout = QVBoxLayout(self.container_widget)
             self.container_layout.setContentsMargins(0, 0, 0, 0)
             self.container_layout.setSpacing(5)
+            self.container_layout.setAlignment(Qt.AlignTop)  # Keep elements aligned at the top
             
             # Create File Options section (expanded by default)
             self.file_options_section = ZurbriggStyleCollapsibleFrame("File Options", collapsed=False)
@@ -666,6 +675,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Add log_section toggled signal connection
             self.log_section.toggled.connect(self.adjust_window_size)
+            
+            # Add a stretchable spacer at the end to push all sections up
+            self.container_layout.addStretch()
             
             # Create scroll area
             self.scroll_area = QScrollArea()
@@ -1181,10 +1193,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Calculate optimal height based on visible content
             total_height = 0
             
-            # Add header height
-            if hasattr(self, 'saveplus_tab'):
-                total_height += 80  # Approximate height for header
-            
             # Add heights for visible sections
             if hasattr(self, 'file_options_section') and not self.file_options_section.is_collapsed():
                 total_height += 150  # Approximate height when expanded
@@ -1204,11 +1212,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add height for save buttons
             total_height += 50
             
-            # Add margins for the main window components (menu bar, status bar, etc)
-            extra_height = 100
-            
-            # Set window size
-            self.resize(self.width(), total_height + extra_height)
+            # Set the container widget's minimum height to ensure proper scroll area behavior
+            self.container_widget.setMinimumHeight(total_height)
             
             # Process events to apply resize immediately
             QtCore.QCoreApplication.processEvents()
@@ -1312,13 +1317,13 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Only change state if different from current state to avoid unnecessary toggling
             if self.file_options_section.is_collapsed() == file_expanded:
-                self.file_options_section.set_collapsed(not file_expanded)
+                self.file_options_section.toggle_content()
                 
             if self.name_gen_section.is_collapsed() == name_expanded:
-                self.name_gen_section.set_collapsed(not name_expanded)
+                self.name_gen_section.toggle_content()
                 
             if self.log_section.is_collapsed() == log_expanded:
-                self.log_section.set_collapsed(not log_expanded)
+                self.log_section.toggle_content()
             
             # Adjust window size to reflect changes
             self.adjust_window_size()
