@@ -327,6 +327,11 @@ class ZurbriggStyleCollapsibleFrame(QWidget):
     def is_collapsed(self):
         """Return the current collapsed state"""
         return self.collapsed
+        
+    def set_collapsed(self, collapsed):
+        """Set the collapsed state directly"""
+        if self.collapsed != collapsed:
+            self.toggle_content()
 
 
 class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
@@ -340,6 +345,15 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_VERSION_TYPE = "SavePlusVersionType"
     OPT_VAR_VERSION_NUMBER = "SavePlusVersionNumber"
     OPT_VAR_ENABLE_TIMED_WARNING = "SavePlusEnableTimedWarning"
+    
+    # Option variables for saving preferences
+    OPT_VAR_DEFAULT_FILETYPE = "SavePlusDefaultFiletype"
+    OPT_VAR_AUTO_SAVE_INTERVAL = "SavePlusAutoSaveInterval"
+    OPT_VAR_DEFAULT_SAVE_PATH = "SavePlusDefaultSavePath"
+    OPT_VAR_PROJECT_PATH = "SavePlusProjectPath"
+    OPT_VAR_FILE_EXPANDED = "SavePlusFileExpanded"
+    OPT_VAR_NAME_EXPANDED = "SavePlusNameExpanded"
+    OPT_VAR_LOG_EXPANDED = "SavePlusLogExpanded"
     
     def __init__(self, parent=None):
         try:
@@ -692,10 +706,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             default_location = QHBoxLayout()
             self.pref_default_path = QLineEdit()
             self.pref_default_path.setPlaceholderText("Default directory for saving files")
-            browse_button = QPushButton("Browse...")
-            browse_button.setFixedWidth(80)
+            browse_default_button = QPushButton("Browse...")
+            browse_default_button.setFixedWidth(80)
+            browse_default_button.clicked.connect(self.browse_default_save_location)
             default_location.addWidget(self.pref_default_path)
-            default_location.addWidget(browse_button)
+            default_location.addWidget(browse_default_button)
             
             paths_layout.addRow("Default Save Location:", default_location)
             
@@ -705,6 +720,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.pref_project_path.setPlaceholderText("Maya project directory")
             project_browse = QPushButton("Browse...")
             project_browse.setFixedWidth(80)
+            project_browse.clicked.connect(self.browse_project_directory)
             project_location.addWidget(self.pref_project_path)
             project_location.addWidget(project_browse)
             
@@ -738,6 +754,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add "Apply Settings" button
             apply_button = QPushButton("Apply Settings")
             apply_button.setFixedWidth(120)
+            apply_button.clicked.connect(self.save_preferences)
             apply_button_layout = QHBoxLayout()
             apply_button_layout.addStretch()
             apply_button_layout.addWidget(apply_button)
@@ -765,6 +782,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Start timer if option is enabled
             if self.enable_timed_warning.isChecked():
                 self.save_timer.start(60000)  # Check every minute
+            
+            # Load preferences
+            self.load_preferences()
             
             # Schedule initial window sizing after UI is fully constructed
             QtCore.QTimer.singleShot(200, self.adjust_window_size)
@@ -865,6 +885,32 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.use_current_dir.setChecked(False)
             
             self.update_filename_preview()
+    
+    def browse_default_save_location(self):
+        """Open file browser to select default save location directory"""
+        print("Opening file browser for default save location...")
+        current_path = self.pref_default_path.text()
+        directory = QFileDialog.getExistingDirectory(
+            self, "Select Default Save Location", current_path
+        )
+        
+        if directory:
+            self.pref_default_path.setText(directory)
+            print(f"Default save location set to: {directory}")
+            self.status_bar.showMessage(f"Default save location set to: {directory}", 5000)
+    
+    def browse_project_directory(self):
+        """Open file browser to select project directory"""
+        print("Opening file browser for project directory...")
+        current_path = self.pref_project_path.text()
+        directory = QFileDialog.getExistingDirectory(
+            self, "Select Project Directory", current_path
+        )
+        
+        if directory:
+            self.pref_project_path.setText(directory)
+            print(f"Project directory set to: {directory}")
+            self.status_bar.showMessage(f"Project directory set to: {directory}", 5000)
     
     def save_plus(self):
         """Execute the save plus operation with the specified filename"""
@@ -1182,6 +1228,102 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             cmds.optionVar(iv=(self.OPT_VAR_VERSION_NUMBER, self.version_number_spinbox.value()))
         except Exception as e:
             debug_print(f"Error saving name generator settings: {e}")
+    
+    def save_preferences(self):
+        """Save all preference settings"""
+        try:
+            # Save file type preference
+            file_type_index = self.pref_default_filetype.currentIndex()
+            cmds.optionVar(iv=(self.OPT_VAR_DEFAULT_FILETYPE, file_type_index))
+            
+            # Save auto-save interval
+            auto_save_interval = self.pref_auto_save_interval.value()
+            cmds.optionVar(iv=(self.OPT_VAR_AUTO_SAVE_INTERVAL, auto_save_interval))
+            
+            # Save path preferences
+            default_path = self.pref_default_path.text()
+            cmds.optionVar(sv=(self.OPT_VAR_DEFAULT_SAVE_PATH, default_path))
+            
+            project_path = self.pref_project_path.text()
+            cmds.optionVar(sv=(self.OPT_VAR_PROJECT_PATH, project_path))
+            
+            # Save UI preferences
+            cmds.optionVar(iv=(self.OPT_VAR_FILE_EXPANDED, int(self.pref_file_expanded.isChecked())))
+            cmds.optionVar(iv=(self.OPT_VAR_NAME_EXPANDED, int(self.pref_name_expanded.isChecked())))
+            cmds.optionVar(iv=(self.OPT_VAR_LOG_EXPANDED, int(self.pref_log_expanded.isChecked())))
+            
+            # Apply UI settings immediately
+            self.apply_ui_settings()
+            
+            print("Preferences saved successfully")
+            self.status_bar.showMessage("Preferences saved successfully", 5000)
+        except Exception as e:
+            error_message = f"Error saving preferences: {e}"
+            print(error_message)
+            self.status_bar.showMessage(error_message, 5000)
+    
+    def load_preferences(self):
+        """Load preference settings"""
+        try:
+            # Load file type preference
+            if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_FILETYPE):
+                file_type_index = cmds.optionVar(q=self.OPT_VAR_DEFAULT_FILETYPE)
+                self.pref_default_filetype.setCurrentIndex(file_type_index)
+            
+            # Load auto-save interval
+            if cmds.optionVar(exists=self.OPT_VAR_AUTO_SAVE_INTERVAL):
+                auto_save_interval = cmds.optionVar(q=self.OPT_VAR_AUTO_SAVE_INTERVAL)
+                self.pref_auto_save_interval.setValue(auto_save_interval)
+            
+            # Load path preferences
+            if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_SAVE_PATH):
+                default_path = cmds.optionVar(q=self.OPT_VAR_DEFAULT_SAVE_PATH)
+                self.pref_default_path.setText(default_path)
+            
+            if cmds.optionVar(exists=self.OPT_VAR_PROJECT_PATH):
+                project_path = cmds.optionVar(q=self.OPT_VAR_PROJECT_PATH)
+                self.pref_project_path.setText(project_path)
+            
+            # Load UI preferences
+            if cmds.optionVar(exists=self.OPT_VAR_FILE_EXPANDED):
+                file_expanded = bool(cmds.optionVar(q=self.OPT_VAR_FILE_EXPANDED))
+                self.pref_file_expanded.setChecked(file_expanded)
+            
+            if cmds.optionVar(exists=self.OPT_VAR_NAME_EXPANDED):
+                name_expanded = bool(cmds.optionVar(q=self.OPT_VAR_NAME_EXPANDED))
+                self.pref_name_expanded.setChecked(name_expanded)
+            
+            if cmds.optionVar(exists=self.OPT_VAR_LOG_EXPANDED):
+                log_expanded = bool(cmds.optionVar(q=self.OPT_VAR_LOG_EXPANDED))
+                self.pref_log_expanded.setChecked(log_expanded)
+            
+            # Apply UI settings
+            self.apply_ui_settings()
+        except Exception as e:
+            debug_print(f"Error loading preferences: {e}")
+    
+    def apply_ui_settings(self):
+        """Apply UI settings from preferences"""
+        try:
+            # Set collapsed state of sections based on preferences
+            file_expanded = self.pref_file_expanded.isChecked()
+            name_expanded = self.pref_name_expanded.isChecked()
+            log_expanded = self.pref_log_expanded.isChecked()
+            
+            # Only change state if different from current state to avoid unnecessary toggling
+            if self.file_options_section.is_collapsed() == file_expanded:
+                self.file_options_section.set_collapsed(not file_expanded)
+                
+            if self.name_gen_section.is_collapsed() == name_expanded:
+                self.name_gen_section.set_collapsed(not name_expanded)
+                
+            if self.log_section.is_collapsed() == log_expanded:
+                self.log_section.set_collapsed(not log_expanded)
+            
+            # Adjust window size to reflect changes
+            self.adjust_window_size()
+        except Exception as e:
+            debug_print(f"Error applying UI settings: {e}")
 
 
 def save_plus_proc(file_path=None):
