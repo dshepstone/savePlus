@@ -112,7 +112,7 @@ class AboutDialog(QDialog):
 class TimedWarningDialog(QDialog):
     """Warning dialog for save reminders"""
     
-    def __init__(self, parent=None, first_time=False):
+    def __init__(self, parent=None, first_time=False, interval=15):
         super(TimedWarningDialog, self).__init__(parent)
         
         self.setWindowTitle("Save Reminder")
@@ -127,16 +127,16 @@ class TimedWarningDialog(QDialog):
         icon_label = QLabel()
         icon_label.setPixmap(self.style().standardIcon(QStyle.SP_MessageBoxWarning).pixmap(32, 32))
         
-        message_text = "It's been 15 minutes since your last save.\nWould you like to save your work now?"
-        
         if first_time:
-            message_text = "You've enabled save reminders. You'll be reminded to save every 15 minutes."
+            message_text = f"You've enabled save reminders. You'll be reminded to save every {interval} minute{'s' if interval != 1 else ''}."
+        else:
+            message_text = f"It's been {interval} minute{'s' if interval != 1 else ''} since your last save.\nWould you like to save your work now?"
         
-        message = QLabel(message_text)
-        message.setWordWrap(True)
+        self.message = QLabel(message_text)
+        self.message.setWordWrap(True)
         
         message_layout.addWidget(icon_label)
-        message_layout.addWidget(message, 1)
+        message_layout.addWidget(self.message, 1)
         
         # Checkbox for disabling warnings (only shown for first-time saves)
         self.disable_checkbox = None
@@ -170,9 +170,9 @@ class TimedWarningDialog(QDialog):
     
     def update_message(self, minutes):
         """Update message to show current interval"""
-        if not hasattr(self, 'first_time') or not self.first_time:
+        if hasattr(self, 'first_time') and not self.first_time:
             message_text = f"It's been {minutes} minute{'s' if minutes != 1 else ''} since your last save.\nWould you like to save your work now?"
-            self.message.setText(message_text)  # Assuming 'message' is the QLabel
+            self.message.setText(message_text)
 
     def get_disable_warnings(self):
         """Return whether warnings should be disabled"""

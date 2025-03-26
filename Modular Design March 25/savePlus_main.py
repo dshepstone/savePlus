@@ -618,6 +618,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.last_save_time = time.time()
             self.save_timer = QTimer(self)
             self.save_timer.timeout.connect(self.check_save_time)
+
+            # Start timers if options are enabled
+            if self.enable_timed_warning.isChecked():
+                self.save_timer.start(60000)  # Check every minute
+                print("[SavePlus Debug] Timer started during initialization")
             
             # Setup timer for auto-backup
             self.last_backup_time = time.time()
@@ -1166,7 +1171,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     
     def show_first_time_warning(self):
         """Show the first-time save warning dialog"""
-        warning_dialog = savePlus_ui_components.TimedWarningDialog(self, first_time=True)
+        # Get the current interval setting
+        reminder_interval = self.reminder_interval_spinbox.value()
+        
+        warning_dialog = savePlus_ui_components.TimedWarningDialog(
+            self, 
+            first_time=True,
+            interval=reminder_interval
+        )
         result = warning_dialog.exec()
         
         # If user chose to disable warnings
@@ -1234,10 +1246,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         if hasattr(self, 'save_timer'):
             if state == Qt.Checked:
                 self.save_timer.start(60000)  # Check every minute
-                print("Save reminder enabled (15-minute interval)")
+                reminder_interval = self.reminder_interval_spinbox.value()
+                print(f"[SavePlus Debug] Save reminder ENABLED with {reminder_interval}-minute interval")
+                print(f"[SavePlus Debug] Timer check frequency: every 60 seconds")
             else:
                 self.save_timer.stop()
-                print("Save reminder disabled")
+                print("[SavePlus Debug] Save reminder DISABLED")
             
             # Save setting
             cmds.optionVar(iv=(self.OPT_VAR_ENABLE_TIMED_WARNING, state == Qt.Checked))
@@ -1250,19 +1264,32 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         # Get interval from preferences or spinbox
         reminder_interval = self.reminder_interval_spinbox.value()
         
+        # Add debug prints to track what's happening
+        print(f"[SavePlus Debug] Timer check - Elapsed: {elapsed_minutes:.2f} min, Threshold: {reminder_interval} min")
+        
         # Show warning if enough time has passed
         if elapsed_minutes >= reminder_interval:
-            warning_dialog = savePlus_ui_components.TimedWarningDialog(self)
-            warning_dialog.update_message(reminder_interval)  # Update message with current interval
+            print(f"[SavePlus Debug] Showing reminder dialog (interval: {reminder_interval} min)")
+            # Create dialog with the current reminder interval
+            warning_dialog = savePlus_ui_components.TimedWarningDialog(self, interval=reminder_interval)
+            
+            # Show the dialog and get the user's response
             result = warning_dialog.exec()
             
+            # Handle the user's choice
             if result == QDialog.Accepted:
-                # User clicked "Save Now"
+                # User clicked "Save Now" - perform save operation
+                print("[SavePlus Debug] User chose to save now")
                 self.save_plus()
             else:
-                # User clicked "Remind Me Later" - reset timer to remind again in 5 minutes
-                self.last_save_time = current_time - ((reminder_interval - 5) * 60)
-    
+                # User clicked "Remind Me Later"
+                # Reset timer to remind them again in 5 minutes (or some shorter interval)
+                shorter_reminder = min(5, reminder_interval/2)  # Either 5 minutes or half the interval, whichever is smaller
+                self.last_save_time = current_time - ((reminder_interval - shorter_reminder) * 60)
+                print(f"[SavePlus Debug] Reminder postponed. Will remind again in {shorter_reminder} minutes")
+        else:
+            print(f"[SavePlus Debug] Not time for reminder yet. Next reminder in {reminder_interval - elapsed_minutes:.2f} minutes")
+        
     def check_backup_time(self):
         """Check if enough time has passed to create an auto-backup"""
         if not self.pref_enable_auto_backup.isChecked():
