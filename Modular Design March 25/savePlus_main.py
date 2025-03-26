@@ -220,10 +220,25 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.use_current_dir = QCheckBox("Use current directory")
             self.use_current_dir.setChecked(True)
             
-            # Add timed save warning checkbox
-            self.enable_timed_warning = QCheckBox("Enable 15-minute save reminder")
+            # Create layout for save reminder controls
+            save_reminder_layout = QHBoxLayout()
+            save_reminder_layout.setContentsMargins(0, 0, 0, 0)
+
+            # Add timed save reminder checkbox with updated label
+            self.enable_timed_warning = QCheckBox("Enable save reminder every")
             self.enable_timed_warning.setChecked(self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False))
             self.enable_timed_warning.stateChanged.connect(self.toggle_timed_warning)
+            save_reminder_layout.addWidget(self.enable_timed_warning)
+
+            # Add spinner for reminder interval
+            self.reminder_interval_spinbox = QSpinBox()
+            self.reminder_interval_spinbox.setRange(1, 60)
+            self.reminder_interval_spinbox.setValue(self.load_option_var(self.OPT_VAR_AUTO_SAVE_INTERVAL, 15))
+            self.reminder_interval_spinbox.setSuffix(" minutes")
+            self.reminder_interval_spinbox.setFixedWidth(100)
+            self.reminder_interval_spinbox.valueChanged.connect(self.update_reminder_interval)
+            save_reminder_layout.addWidget(self.reminder_interval_spinbox)
+            save_reminder_layout.addStretch()
             
             # Add version notes option
             self.add_version_notes = QCheckBox("Add version notes when saving")
@@ -234,7 +249,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             file_layout.addRow("Filename:", filename_layout)
             file_layout.addRow("File Type:", self.filetype_combo)
             file_layout.addRow("", self.use_current_dir)
-            file_layout.addRow("", self.enable_timed_warning)
+            file_layout.addRow("", save_reminder_layout)
             file_layout.addRow("", self.add_version_notes)
             
             self.file_options_section.add_widget(file_options)
@@ -638,7 +653,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             cmds.confirmDialog(title="SavePlus Error", 
                               message=f"Error loading SavePlus: {str(e)}\n\nCheck script editor for details.", 
                               button=["OK"], defaultButton="OK")
-    
+
+    def update_reminder_interval(self, value):
+        """Update the save reminder interval"""
+        # Save the new interval to preferences
+        cmds.optionVar(iv=(self.OPT_VAR_AUTO_SAVE_INTERVAL, value))
+        
+        # Update the value in the preferences tab to keep them in sync
+        if hasattr(self, 'pref_auto_save_interval'):
+            self.pref_auto_save_interval.setValue(value)
+        
+        print(f"Save reminder interval updated to {value} minutes")
+
     def closeEvent(self, event):
         """Handle clean up when window is closed"""
         savePlus_core.debug_print("Closing SavePlus UI")
@@ -1221,17 +1247,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         current_time = time.time()
         elapsed_minutes = (current_time - self.last_save_time) / 60
         
-        # Show warning if it's been at least 15 minutes
-        if elapsed_minutes >= 15:
+        # Get interval from preferences or spinbox
+        reminder_interval = self.reminder_interval_spinbox.value()
+        
+        # Show warning if enough time has passed
+        if elapsed_minutes >= reminder_interval:
             warning_dialog = savePlus_ui_components.TimedWarningDialog(self)
+            warning_dialog.update_message(reminder_interval)  # Update message with current interval
             result = warning_dialog.exec()
             
             if result == QDialog.Accepted:
                 # User clicked "Save Now"
                 self.save_plus()
             else:
-                # User clicked "Remind Me Later" - reset timer for 5 minutes
-                self.last_save_time = current_time - (10 * 60)  # Will trigger again in 5 minutes
+                # User clicked "Remind Me Later" - reset timer to remind again in 5 minutes
+                self.last_save_time = current_time - ((reminder_interval - 5) * 60)
     
     def check_backup_time(self):
         """Check if enough time has passed to create an auto-backup"""
@@ -1327,6 +1357,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Save auto-save interval
             auto_save_interval = self.pref_auto_save_interval.value()
             cmds.optionVar(iv=(self.OPT_VAR_AUTO_SAVE_INTERVAL, auto_save_interval))
+            
+            # Sync the reminder interval with the main tab spinner
+            if hasattr(self, 'reminder_interval_spinbox'):
+                self.reminder_interval_spinbox.setValue(auto_save_interval)
             
             # Save path preferences
             default_path = self.pref_default_path.text()

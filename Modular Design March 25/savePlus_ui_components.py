@@ -168,6 +168,12 @@ class TimedWarningDialog(QDialog):
         
         self.setLayout(layout)
     
+    def update_message(self, minutes):
+        """Update message to show current interval"""
+        if not hasattr(self, 'first_time') or not self.first_time:
+            message_text = f"It's been {minutes} minute{'s' if minutes != 1 else ''} since your last save.\nWould you like to save your work now?"
+            self.message.setText(message_text)  # Assuming 'message' is the QLabel
+
     def get_disable_warnings(self):
         """Return whether warnings should be disabled"""
         if self.disable_checkbox:
