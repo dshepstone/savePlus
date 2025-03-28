@@ -172,49 +172,66 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add tab widget to main layout
             main_layout.addWidget(self.tab_widget)
             
-            # --- SAVEPLUS TAB CONTENT ---
+           # --- SAVEPLUS TAB CONTENT ---
             
             # Create container widget for scrollable content
             self.container_widget = QWidget()
             # Set a fixed policy to ensure elements stay at the top
             self.container_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
-            
+
             self.container_layout = QVBoxLayout(self.container_widget)
             self.container_layout.setContentsMargins(0, 0, 0, 0)
             self.container_layout.setSpacing(15)  # Increased spacing between sections
             self.container_layout.setAlignment(Qt.AlignTop)  # Keep elements aligned at the top
-            
+
             # Create File Options section (expanded by default)
             self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=False)
             self.file_options_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-            
+
             # Create file options content
             file_options = QWidget()
             file_layout = QFormLayout(file_options)
             file_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-            
+
             # Add filename input field
             filename_layout = QHBoxLayout()
             self.filename_input = QLineEdit()
             self.filename_input.setMinimumWidth(250)
             filename_layout.addWidget(self.filename_input)
-            
-            # Add save location display label
-            self.save_location_label = QLabel()
-            self.save_location_label.setStyleSheet("color: #666666; font-size: 9px;")
-            file_layout.addRow("Save Location:", self.save_location_label)
 
             # Get current file name if available
             current_file = cmds.file(query=True, sceneName=True)
             if current_file:
                 self.filename_input.setText(os.path.basename(current_file))
-            
-            browse_button = QPushButton("Browse Directory")
+
+            # Create a button group for path options
+            path_buttons_layout = QHBoxLayout()
+            path_buttons_layout.setSpacing(4)  # Tighter spacing between buttons
+
+            browse_button = QPushButton("Browse")  # Even shorter text
             browse_button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
             browse_button.clicked.connect(self.browse_file)
-            browse_button.setFixedWidth(120)
-            filename_layout.addWidget(browse_button)
-            
+            browse_button.setFixedWidth(80)  # Even smaller width if needed
+            browse_button.setToolTip("Browse for a directory to save to")
+
+            reference_path_button = QPushButton("Reference")
+            reference_path_button.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
+            reference_path_button.clicked.connect(self.use_reference_path)
+            reference_path_button.setFixedWidth(80)  # Matching width
+            reference_path_button.setToolTip("Use path from selected reference")
+
+            path_buttons_layout.addWidget(browse_button)
+            path_buttons_layout.addWidget(reference_path_button)
+            filename_layout.addLayout(path_buttons_layout)
+
+            # Add to form layout
+            file_layout.addRow("Filename:", filename_layout)
+
+            # Add save location display label (after the filename row)
+            self.save_location_label = QLabel()
+            self.save_location_label.setStyleSheet("color: #666666; font-size: 9px;")
+            file_layout.addRow("Save Location:", self.save_location_label)
+
             # Add file type selection
             self.filetype_combo = QComboBox()
             self.filetype_combo.addItems(["Maya ASCII (.ma)", "Maya Binary (.mb)"])
@@ -1600,6 +1617,107 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 
         # Update save location display
         self.update_save_location_display()
+
+    def use_reference_path(self):
+        """Extract path from selected referenced node and use it for saving"""
+        print("Attempting to use reference path from selection...")
+        
+        # Get the current selection
+        selection = cmds.ls(selection=True)
+        
+        if not selection:
+            self.status_bar.showMessage("No objects selected. Please select a referenced object.", 5000)
+            print("No selection found")
+            return
+        
+        # Check if selection is referenced
+        reference_nodes = []
+        for obj in selection:
+            if cmds.referenceQuery(obj, isNodeReferenced=True):
+                reference_nodes.append(obj)
+        
+        if not reference_nodes:
+            self.status_bar.showMessage("Selected objects are not references. Please select a referenced object.", 5000)
+            print("No referenced objects in selection")
+            return
+        
+        # Get the reference file path
+        try:
+            # Get the reference node for the first referenced object
+            reference_node = cmds.referenceQuery(reference_nodes[0], referenceNode=True)
+            
+            # Get the file path for this reference
+            reference_file = cmds.referenceQuery(reference_node, filename=True)
+            print(f"Reference file: {reference_file}")
+            
+            # Correct way to handle nested references
+            # In Maya, when you get a filename from referenceQuery, it already gives
+            # the resolved path, so we don't need additional parent handling
+            
+            # Extract the directory path
+            reference_dir = os.path.dirname(reference_file)
+            print(f"Using reference directory: {reference_dir}")
+            
+            # Set this as our new directory
+            self.selected_directory = reference_dir
+            
+            # Update UI
+            self.use_current_dir.setChecked(False)
+            self.update_save_location_display()
+            
+            # Extract character/asset name from reference for filename suggestion
+            ref_basename = os.path.basename(reference_file)
+            asset_name = os.path.splitext(ref_basename)[0]
+            
+            # Remove common prefixes or namespaces from the asset name if needed
+            if '_' in asset_name:
+                # Usually character names are after prefixes like "chr_" or "prop_"
+                parts = asset_name.split('_')
+                if len(parts) > 1 and parts[0].lower() in ['chr', 'prop', 'env', 'rig']:
+                    asset_name = '_'.join(parts[1:])  # Remove the prefix
+            
+            # Ask if user wants to use this name for the file
+            if cmds.confirmDialog(
+                title='Use Asset Name',
+                message=f'Do you want to use "{asset_name}" in your filename?',
+                button=['Yes', 'No'],
+                defaultButton='Yes',
+                cancelButton='No'
+            ) == 'Yes':
+                # Get current scene file base name or create a new one
+                current_file = cmds.file(query=True, sceneName=True)
+                if current_file:
+                    current_basename = os.path.basename(current_file)
+                    # Insert asset name into filename if not already there
+                    if asset_name not in current_basename:
+                        name_parts = os.path.splitext(current_basename)
+                        new_basename = f"{name_parts[0]}_{asset_name}{name_parts[1]}"
+                        self.filename_input.setText(new_basename)
+                        print(f"Updated filename to include asset name: {new_basename}")
+                else:
+                    # Suggest a new filename with asset name
+                    suggested_name = f"shot_{asset_name}_v001.ma"
+                    self.filename_input.setText(suggested_name)
+                    print(f"Created new suggested filename: {suggested_name}")
+                
+                self.update_filename_preview()
+            
+            # Update the filename input if needed (only if we didn't set it from asset name)
+            if not self.filename_input.text():
+                current_filename = os.path.basename(cmds.file(query=True, sceneName=True) or "untitled.ma")
+                new_path = os.path.join(reference_dir, current_filename)
+                self.filename_input.setText(new_path)
+                self.update_filename_preview()
+            
+            message = f"Save location set to referenced character path: {reference_dir}"
+            self.status_bar.showMessage(message, 5000)
+            print(message)
+            
+        except Exception as e:
+            message = f"Error getting reference path: {e}"
+            self.status_bar.showMessage(message, 5000)
+            print(message)
+            traceback.print_exc()
 
     def apply_ui_settings(self):
         """Apply UI settings from preferences"""
