@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (QPushButton, QVBoxLayout, QLabel, QLineEdit,
                               QComboBox, QStyle, QSizePolicy, QTextEdit, QSpinBox,
                               QMessageBox, QFormLayout, QScrollArea, QTabWidget, 
                               QListWidget, QListWidgetItem, QTableWidget, 
-                              QTableWidgetItem, QHeaderView, QWidget)
+                              QTableWidgetItem, QHeaderView, QWidget, QDialog)
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction
@@ -199,6 +199,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.filename_input.setMinimumWidth(250)
             filename_layout.addWidget(self.filename_input)
             
+            # Add save location display label
+            self.save_location_label = QLabel()
+            self.save_location_label.setStyleSheet("color: #666666; font-size: 9px;")
+            file_layout.addRow("Save Location:", self.save_location_label)
+
             # Get current file name if available
             current_file = cmds.file(query=True, sceneName=True)
             if current_file:
@@ -613,16 +618,31 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Log initialization message
             print("SavePlus UI initialized successfully")
+            print("Setting up temporary test interval for reminder")
+            self.reminder_interval_spinbox.setValue(0.2)  # Set to 0.2 minutes (12 seconds) for testing
+            self.enable_timed_warning.setChecked(True)  # Force enable for testing
             
             # Setup timer for save reminders
             self.last_save_time = time.time()
             self.save_timer = QTimer(self)
             self.save_timer.timeout.connect(self.check_save_time)
 
+            # Enable this timer in Maya's event loop - ADD THIS CODE RIGHT HERE
+            if hasattr(self, 'save_timer'):
+                # Connect to Maya's main loop if needed
+                try:
+                    from maya import OpenMayaUI as omui
+                    print("[SavePlus Debug] Connected timer to Maya's event loop")
+                except Exception as e:
+                    print(f"[SavePlus Debug] Using standard Qt timer: {e}")
+
             # Start timers if options are enabled
             if self.enable_timed_warning.isChecked():
-                self.save_timer.start(60000)  # Check every minute
-                print("[SavePlus Debug] Timer started during initialization")
+                if not self.save_timer.isActive():
+                    # For testing, check every 10 seconds instead of every minute
+                    self.save_timer.start(10000)  # 10 seconds (change back to 60000 for production)
+                    print("[SavePlus Debug] Timer started during initialization")
+                    print(f"[SavePlus Debug] Current time: {time.ctime(self.last_save_time)}")
             
             # Setup timer for auto-backup
             self.last_backup_time = time.time()
@@ -631,10 +651,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Flag to track first-time save
             self.is_first_save = not current_file
-            
-            # Start timers if options are enabled
-            if self.enable_timed_warning.isChecked():
-                self.save_timer.start(60000)  # Check every minute
             
             if self.pref_enable_auto_backup.isChecked():
                 self.backup_timer.start(60000)  # Check every minute
@@ -750,8 +766,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def browse_file(self):
         """Open file browser to select save location directory"""
         print("Opening file browser for save location directory...")
+        
+        # Use default path from preferences if available
+        default_path = ""
+        if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+            default_path = self.pref_default_path.text()
+        
         directory = QFileDialog.getExistingDirectory(
-            self, "Select Save Location Directory", ""
+            self, "Select Save Location Directory", default_path
         )
         
         if directory:
@@ -774,7 +796,24 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.use_current_dir.setChecked(False)
             
             self.update_filename_preview()
-    
+            
+            # Update save location display
+            self.update_save_location_display()
+
+    def update_save_location_display(self):
+        """Update the display of the current save location"""
+        if hasattr(self, 'save_location_label'):
+            if self.selected_directory:
+                self.save_location_label.setText(self.selected_directory)
+            elif hasattr(self, 'pref_default_path') and self.pref_default_path.text() and self.use_current_dir.isChecked():
+                self.save_location_label.setText(self.pref_default_path.text())
+            else:
+                current_file = cmds.file(query=True, sceneName=True)
+                if current_file:
+                    self.save_location_label.setText(os.path.dirname(current_file))
+                else:
+                    self.save_location_label.setText("Default Maya project")
+
     def browse_default_save_location(self):
         """Open file browser to select default save location directory"""
         print("Opening file browser for default save location...")
@@ -804,6 +843,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def save_plus(self):
         """Execute the save plus operation with the specified filename"""
         print("Starting Save Plus operation...")
+        # Reset the save timer immediately when save is attempted
+        self.last_save_time = time.time()
         filename = self.filename_input.text()
         
         if not filename:
@@ -867,10 +908,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 # Update version history
                 self.version_history.add_version(new_file_path, version_notes)
                 self.populate_recent_files()
-                
-                # Reset the save timer
-                self.last_save_time = time.time()
-                
+                              
                 # Reset the backup timer
                 self.last_backup_time = time.time()
                 
@@ -881,6 +919,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def save_as_new(self):
         """Save the file with the specified name without incrementing"""
         print("Starting Save As New operation...")
+        # Reset the save timer immediately when save is attempted
+        self.last_save_time = time.time()
         filename = self.filename_input.text()
         
         if not filename:
@@ -917,12 +957,50 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         
         print(f"Attempting to save as: {filename}")
         
-        # Check if file exists
+        # Check if file exists - MODIFIED to give user options
         if os.path.exists(filename):
-            message = f"Warning: {os.path.basename(filename)} already exists, file not saved"
-            self.status_bar.showMessage(message, 5000)
-            print(message)
-            return
+            msgBox = QMessageBox(self)
+            msgBox.setWindowTitle("File Exists")
+            msgBox.setText(f"The file {os.path.basename(filename)} already exists.\nWhat would you like to do?")
+
+            overwriteButton = msgBox.addButton("Overwrite", QMessageBox.ActionRole)
+            newNameButton = msgBox.addButton("Use New Name", QMessageBox.ActionRole)
+            cancelButton = msgBox.addButton("Cancel", QMessageBox.RejectRole)
+
+            msgBox.setDefaultButton(cancelButton)  # Set Cancel as default
+            msgBox.exec()
+
+            clickedButton = msgBox.clickedButton()
+
+            if clickedButton == overwriteButton:
+                choice = 0  # Maintain original choice values
+            elif clickedButton == newNameButton:
+                choice = 1
+            else:
+                choice = 2
+            
+            if choice == 0:  # Overwrite
+                print(f"Overwriting existing file: {filename}")
+                # Continue with save operation
+            elif choice == 1:  # Use New Name
+                # Generate a new unique filename
+                base_dir = os.path.dirname(filename)
+                base_name, ext = os.path.splitext(os.path.basename(filename))
+                
+                # Try to find a unique name by adding a number
+                counter = 1
+                new_filename = os.path.join(base_dir, f"{base_name}_{counter}{ext}")
+                while os.path.exists(new_filename):
+                    counter += 1
+                    new_filename = os.path.join(base_dir, f"{base_name}_{counter}{ext}")
+                
+                filename = new_filename
+                print(f"Using new unique filename: {filename}")
+            else:  # Cancel
+                message = "Save operation cancelled"
+                self.status_bar.showMessage(message, 5000)
+                print(message)
+                return
         
         # Get version notes if enabled
         version_notes = ""
@@ -966,10 +1044,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Update version history
             self.version_history.add_version(filename, version_notes)
             self.populate_recent_files()
-            
-            # Reset the save timer
-            self.last_save_time = time.time()
-            
+                      
             # Reset the backup timer
             self.last_backup_time = time.time()
             
@@ -1066,7 +1141,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             elif result == 'Save':
                 cmds.file(save=True)
         
-        # Open the file
+        # Find this section in the open_maya_file method, around line 880
         try:
             cmds.file(file_path, open=True, force=True)
             message = f"Opened: {os.path.basename(file_path)}"
@@ -1076,6 +1151,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Update the filename input
             self.filename_input.setText(os.path.basename(file_path))
             self.update_filename_preview()
+            
+            # Add these new lines to update the save location display
+            self.selected_directory = os.path.dirname(file_path)
+            self.update_save_location_display()
             
         except Exception as e:
             message = f"Error opening file: {e}"
@@ -1265,8 +1344,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         reminder_interval = self.reminder_interval_spinbox.value()
         
         # Add debug prints to track what's happening
-        print(f"[SavePlus Debug] Timer check - Elapsed: {elapsed_minutes:.2f} min, Threshold: {reminder_interval} min")
-        
+        print(f"[SavePlus Debug] Timer check - Current time: {time.ctime(current_time)}")
+        print(f"[SavePlus Debug] Last save time: {time.ctime(self.last_save_time)}")
+        print(f"[SavePlus Debug] Elapsed: {elapsed_minutes:.2f} min, Threshold: {reminder_interval} min")
+              
         # Show warning if enough time has passed
         if elapsed_minutes >= reminder_interval:
             print(f"[SavePlus Debug] Showing reminder dialog (interval: {reminder_interval} min)")
@@ -1278,9 +1359,34 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Handle the user's choice
             if result == QDialog.Accepted:
-                # User clicked "Save Now" - perform save operation
-                print("[SavePlus Debug] User chose to save now")
-                self.save_plus()
+                # User clicked "Save Now" - Ask which save method to use
+                msgBox = QMessageBox(self)
+                msgBox.setWindowTitle("Save Method")
+                msgBox.setText("How would you like to save your file?")
+
+                savePlusButton = msgBox.addButton("Save Plus (Increment)", QMessageBox.ActionRole)
+                saveAsNewButton = msgBox.addButton("Save As New", QMessageBox.ActionRole)
+                cancelButton = msgBox.addButton("Cancel", QMessageBox.RejectRole)
+
+                msgBox.setDefaultButton(savePlusButton)  # Default to Save Plus
+                msgBox.exec()
+
+                clickedButton = msgBox.clickedButton()
+
+                if clickedButton == savePlusButton:
+                    save_choice = 0
+                elif clickedButton == saveAsNewButton:
+                    save_choice = 1
+                else:
+                    save_choice = 2
+                
+                if save_choice == 0:  # Save Plus
+                    print("[SavePlus Debug] User chose Save Plus")
+                    self.save_plus()
+                elif save_choice == 1:  # Save As New
+                    print("[SavePlus Debug] User chose Save As New")
+                    self.save_as_new()
+                # If user chooses Cancel (option 2), do nothing
             else:
                 # User clicked "Remind Me Later"
                 # Reset timer to remind them again in 5 minutes (or some shorter interval)
@@ -1423,6 +1529,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             error_message = f"Error saving preferences: {e}"
             print(error_message)
             self.status_bar.showMessage(error_message, 5000)
+
+            # Update save location display to reflect new preferences
+            self.update_save_location_display()
     
     def load_preferences(self):
         """Load preference settings"""
@@ -1476,7 +1585,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.apply_ui_settings()
         except Exception as e:
             savePlus_core.debug_print(f"Error loading preferences: {e}")
-    
+
+        # Initialize save location based on default path
+        if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_SAVE_PATH):
+            default_path = cmds.optionVar(q=self.OPT_VAR_DEFAULT_SAVE_PATH)
+            
+            # If the filename input is empty and no current file is open,
+            # use the default path
+            current_file = cmds.file(query=True, sceneName=True)
+            if not current_file and not self.filename_input.text():
+                self.selected_directory = default_path
+                # Add a placeholder text to show the path
+                self.filename_input.setPlaceholderText("untitled.ma")
+                
+        # Update save location display
+        self.update_save_location_display()
+
     def apply_ui_settings(self):
         """Apply UI settings from preferences"""
         try:
