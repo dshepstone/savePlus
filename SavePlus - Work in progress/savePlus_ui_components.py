@@ -272,6 +272,14 @@ class ZurbriggStyleCollapsibleHeader(QWidget):
             self.parent().toggle_content()
         super(ZurbriggStyleCollapsibleHeader, self).mousePressEvent(event)
 
+    def add_widget(self, widget):
+        """Add a widget to the content layout"""
+        self.content_layout.addWidget(widget)
+        
+        # Add a small spacer at the bottom for visual breathing room
+        spacer = QWidget()
+        spacer.setFixedHeight(5)
+        self.content_layout.addWidget(spacer)
 
 class ZurbriggStyleCollapsibleFrame(QWidget):
     """

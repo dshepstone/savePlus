@@ -2,10 +2,15 @@
 SavePlus Main - Main UI class and functionality for the SavePlus tool
 Part of the SavePlus toolset for Maya 2025
 """
-
+import os
+import time
+import re
+import traceback
 import os
 import time
 import traceback
+
+from maya import cmds, mel
 from maya import cmds, mel
 
 from PySide6.QtWidgets import (QPushButton, QVBoxLayout, QLabel, QLineEdit, 
@@ -26,6 +31,36 @@ import savePlus_ui_components
 # Constants
 VERSION = savePlus_core.VERSION
 UNIQUE_IDENTIFIER = "SavePlus_v1_ToolButton"
+
+def truncate_path(path, max_length=40):
+    """
+    Truncate a path for display by preserving the beginning and end
+    while replacing the middle with ellipsis if too long.
+    """
+    if not path or len(path) <= max_length:
+        return path
+        
+    # Keep the drive or network location part
+    drive, remainder = os.path.splitdrive(path)
+    
+    # Separate the filename from the directory path
+    directory, filename = os.path.split(remainder)
+    
+    # Calculate how much of the directory we can show
+    # We want to show the beginning and end of the directory path
+    available_length = max_length - len(drive) - len(filename) - 5  # 5 for "/.../"
+    
+    if available_length <= 0:
+        # Path is too long, just show drive and filename
+        return f"{drive}/.../{filename}"
+    
+    half_length = available_length // 2
+    
+    # Get the beginning and end of the directory path
+    dir_start = directory[:half_length]
+    dir_end = directory[-half_length:] if half_length > 0 else ""
+    
+    return f"{drive}{dir_start}/.../{dir_end}/{filename}"
 
 class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     """SavePlus UI Class - Modern interface with menus and log display"""
@@ -172,7 +207,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add tab widget to main layout
             main_layout.addWidget(self.tab_widget)
             
-           # --- SAVEPLUS TAB CONTENT ---
+            # --- SAVEPLUS TAB CONTENT ---
             
             # Create container widget for scrollable content
             self.container_widget = QWidget()
@@ -183,6 +218,91 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.container_layout.setContentsMargins(0, 0, 0, 0)
             self.container_layout.setSpacing(15)  # Increased spacing between sections
             self.container_layout.setAlignment(Qt.AlignTop)  # Keep elements aligned at the top
+
+            # Create save buttons at the TOP of interface
+            buttons_layout = QHBoxLayout()
+            buttons_layout.setContentsMargins(0, 10, 0, 10)  # Add some vertical padding
+
+            # Style buttons with consistent, modern appearance
+            button_style = """
+            QPushButton {
+                border-radius: 4px;
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #3a3a3a, stop: 1 #2a2a2a);
+                border: 1px solid #444444;
+                padding: 6px 12px;
+                min-height: 30px;
+                color: #ffffff;  /* White text for maximum contrast */
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #4a4a4a, stop: 1 #3a3a3a);
+                color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
+                                                stop: 0 #2a2a2a, stop: 1 #3a3a3a);
+                color: #ffffff;
+            }
+            """
+
+            # Create buttons with keyboard shortcut indicators
+            save_button = QPushButton("Save Plus (Ctrl+S)")
+            save_button.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
+            save_button.setMinimumHeight(40)
+            save_button.setStyleSheet(button_style)
+            save_button.clicked.connect(self.save_plus)
+
+            save_new_button = QPushButton("Save As New (Ctrl+Shift+S)")
+            save_new_button.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
+            save_new_button.setMinimumHeight(40)
+            save_new_button.setStyleSheet(button_style)
+            save_new_button.clicked.connect(self.save_as_new)
+
+            # New backup button
+            backup_button = QPushButton("Create Backup (Ctrl+B)")
+            backup_button.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
+            backup_button.setMinimumHeight(40)
+            backup_button.setStyleSheet(button_style)
+            backup_button.clicked.connect(self.create_backup)
+            backup_button.setToolTip("Create a backup copy of the current file")
+
+            buttons_layout.addWidget(save_button)
+            buttons_layout.addWidget(save_new_button)
+            buttons_layout.addWidget(backup_button)
+
+            # Add top save buttons to container layout
+            self.container_layout.addLayout(buttons_layout)
+
+            # Last save indicator and status
+            last_save_layout = QHBoxLayout()
+            last_save_layout.setContentsMargins(4, 2, 4, 2)
+
+            last_save_container = QFrame()
+            last_save_container.setStyleSheet("background-color: rgba(0, 0, 0, 0.2); border-radius: 3px;")
+            last_save_container.setLayout(last_save_layout)
+
+            self.last_save_indicator = QLabel("●")
+            self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")
+            self.last_save_indicator.setFixedWidth(20)
+
+            self.last_save_status = QLabel("Last saved: N/A")
+            self.last_save_status.setStyleSheet("color: #ffffff; font-size: 10px;")
+
+            last_save_layout.addWidget(self.last_save_indicator)
+            last_save_layout.addWidget(self.last_save_status)
+            last_save_layout.addStretch()
+
+            self.container_layout.addWidget(last_save_container)
+
+            # Add a subtle separator between buttons and sections
+            separator = QFrame()
+            separator.setFrameShape(QFrame.HLine)
+            separator.setFrameShadow(QFrame.Sunken)
+            separator.setStyleSheet("background-color: #e0e0e0; max-height: 1px;")
+            self.container_layout.addWidget(separator)
+            self.container_layout.addSpacing(10)  # Add space after separator
 
             # Create File Options section (expanded by default)
             self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=False)
@@ -197,6 +317,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             filename_layout = QHBoxLayout()
             self.filename_input = QLineEdit()
             self.filename_input.setMinimumWidth(250)
+            self.filename_input.textChanged.connect(self.update_version_preview)
+            self.filename_input.setMaximumWidth(350)  # Limit maximum width
+            self.filename_input.setTextMargins(2, 0, 2, 0)  # Add text margins
+            self.filename_input.home(False)  # Ensure text starts from beginning
+            # Store full path separately from display name
+            self.current_full_path = ""
             filename_layout.addWidget(self.filename_input)
 
             # Get current file name if available
@@ -227,16 +353,35 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add to form layout
             file_layout.addRow("Filename:", filename_layout)
 
-            # Add save location display label (after the filename row)
+            # Add save location display label with path visualization
             self.save_location_label = QLabel()
-            self.save_location_label.setStyleSheet("color: #666666; font-size: 9px;")
+            self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
             file_layout.addRow("Save Location:", self.save_location_label)
+
+            # Add version preview
+            version_preview_layout = QHBoxLayout()
+            version_preview_label = QLabel("Next version:")
+            version_preview_label.setStyleSheet("color: #666666; font-size: 11px;")
+
+            self.version_preview_icon = QLabel("→")
+            self.version_preview_icon.setStyleSheet("color: #0066CC; font-weight: bold;")
+
+            self.version_preview_text = QLabel("N/A")
+            self.version_preview_text.setStyleSheet("color: #0066CC; font-weight: bold;")
+
+            version_preview_layout.addWidget(version_preview_label)
+            version_preview_layout.addWidget(self.version_preview_icon)
+            version_preview_layout.addWidget(self.version_preview_text)
+            version_preview_layout.addStretch()
+
+            file_layout.addRow("", version_preview_layout)
 
             # Add file type selection
             self.filetype_combo = QComboBox()
             self.filetype_combo.addItems(["Maya ASCII (.ma)", "Maya Binary (.mb)"])
             self.filetype_combo.setFixedWidth(180)
             self.filetype_combo.currentIndexChanged.connect(self.update_filename_preview)
+            self.filetype_combo.currentIndexChanged.connect(self.update_version_preview)
             
             # Add option to use the current directory
             self.use_current_dir = QCheckBox("Use current directory")
@@ -268,7 +413,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.add_version_notes.setToolTip("Add notes for each version to track changes")
             
             # Add to form layout
-            file_layout.addRow("Filename:", filename_layout)
             file_layout.addRow("File Type:", self.filetype_combo)
             file_layout.addRow("", self.use_current_dir)
             file_layout.addRow("", save_reminder_layout)
@@ -375,32 +519,17 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add name_gen_section toggled signal connection
             self.name_gen_section.toggled.connect(self.adjust_window_size)
             
-            # Add save buttons
-            buttons_layout = QHBoxLayout()
-            buttons_layout.setContentsMargins(0, 10, 0, 10)  # Add some vertical padding
-            
-            save_button = QPushButton("Save Plus")
-            save_button.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
-            save_button.setMinimumHeight(40)
-            save_button.clicked.connect(self.save_plus)
-            
-            save_new_button = QPushButton("Save As New")
-            save_new_button.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
-            save_new_button.setMinimumHeight(40)
-            save_new_button.clicked.connect(self.save_as_new)
-            
-            # New backup button
-            backup_button = QPushButton("Create Backup")
-            backup_button.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
-            backup_button.setMinimumHeight(40)
-            backup_button.clicked.connect(self.create_backup)
-            backup_button.setToolTip("Create a backup copy of the current file")
-            
-            buttons_layout.addWidget(save_button)
-            buttons_layout.addWidget(save_new_button)
-            buttons_layout.addWidget(backup_button)
-            
-            self.container_layout.addLayout(buttons_layout)
+            # Add Quick Notes section
+            quick_notes_layout = QHBoxLayout()
+            quick_notes_layout.setContentsMargins(0, 5, 0, 5)
+
+            self.quick_note_input = QLineEdit()
+            self.quick_note_input.setPlaceholderText("Add a quick note for next save...")
+
+            quick_notes_layout.addWidget(QLabel("Quick Note:"))
+            quick_notes_layout.addWidget(self.quick_note_input)
+
+            self.container_layout.addLayout(quick_notes_layout)
             
             # Create Log section (collapsed by default)
             self.log_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Log Output", collapsed=True)
@@ -604,9 +733,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             ui_layout.addRow("", self.pref_file_expanded)
             
             self.pref_name_expanded = QCheckBox("Name Generator section expanded by default")
+            self.pref_name_expanded.setChecked(False)  # Default to collapsed
             ui_layout.addRow("", self.pref_name_expanded)
             
             self.pref_log_expanded = QCheckBox("Log Output section expanded by default")
+            self.pref_log_expanded.setChecked(False)  # Default to collapsed
             ui_layout.addRow("", self.pref_log_expanded)
             
             # Add to preferences layout
@@ -628,6 +759,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Update filename preview initially
             self.update_filename_preview()
+            self.update_version_preview()
             
             # Setup log redirector
             self.log_redirector = savePlus_ui_components.LogRedirector(self.log_text)
@@ -635,9 +767,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Log initialization message
             print("SavePlus UI initialized successfully")
-            print("Setting up temporary test interval for reminder")
-            self.reminder_interval_spinbox.setValue(0.2)  # Set to 0.2 minutes (12 seconds) for testing
-            self.enable_timed_warning.setChecked(True)  # Force enable for testing
             
             # Setup timer for save reminders
             self.last_save_time = time.time()
@@ -656,8 +785,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Start timers if options are enabled
             if self.enable_timed_warning.isChecked():
                 if not self.save_timer.isActive():
-                    # For testing, check every 10 seconds instead of every minute
-                    self.save_timer.start(10000)  # 10 seconds (change back to 60000 for production)
+                    # Start timer - check every minute
+                    self.save_timer.start(60000)  # 60 seconds
                     print("[SavePlus Debug] Timer started during initialization")
                     print(f"[SavePlus Debug] Current time: {time.ctime(self.last_save_time)}")
             
@@ -689,8 +818,17 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             print(error_message)
             traceback.print_exc()
             cmds.confirmDialog(title="SavePlus Error", 
-                              message=f"Error loading SavePlus: {str(e)}\n\nCheck script editor for details.", 
-                              button=["OK"], defaultButton="OK")
+                            message=f"Error loading SavePlus: {str(e)}\n\nCheck script editor for details.", 
+                            button=["OK"], defaultButton="OK")
+
+    def update_filename_display(self, full_path):
+        """Update the filename input to show only the basename while storing the full path"""
+        self.current_full_path = full_path
+        basename = os.path.basename(full_path) if full_path else ""
+        self.filename_input.setText(basename)
+        self.filename_input.setToolTip(full_path)  # Show full path on hover
+        self.update_filename_preview()
+        self.update_version_preview()
 
     def update_reminder_interval(self, value):
         """Update the save reminder interval"""
@@ -800,7 +938,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # If we have a filename, combine with the new directory
             if current_filename:
                 new_path = os.path.join(directory, current_filename)
-                self.filename_input.setText(new_path)
+                self.update_filename_display(new_path)
+                self.filename_input.setText(os.path.basename(new_path))
+                self.filename_input.setToolTip(new_path)  # Show full path on hover
                 print(f"Selected directory: {directory}")
                 print(f"Updated path: {new_path}")
             else:
@@ -820,16 +960,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def update_save_location_display(self):
         """Update the display of the current save location"""
         if hasattr(self, 'save_location_label'):
+            full_path = ""
             if self.selected_directory:
-                self.save_location_label.setText(self.selected_directory)
+                full_path = self.selected_directory
             elif hasattr(self, 'pref_default_path') and self.pref_default_path.text() and self.use_current_dir.isChecked():
-                self.save_location_label.setText(self.pref_default_path.text())
+                full_path = self.pref_default_path.text()
             else:
                 current_file = cmds.file(query=True, sceneName=True)
                 if current_file:
-                    self.save_location_label.setText(os.path.dirname(current_file))
+                    full_path = os.path.dirname(current_file)
                 else:
-                    self.save_location_label.setText("Default Maya project")
+                    full_path = "Default Maya project"
+            
+            # Display truncated path but set full path as tooltip
+            truncated_path = truncate_path(full_path, 40)  # Adjust max_length as needed
+            self.save_location_label.setText(truncated_path)
+            self.save_location_label.setToolTip(full_path)  # Show full path on hover
 
     def browse_default_save_location(self):
         """Open file browser to select default save location directory"""
@@ -862,8 +1008,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         print("Starting Save Plus operation...")
         # Reset the save timer immediately when save is attempted
         self.last_save_time = time.time()
-        filename = self.filename_input.text()
-        
+        filename = self.current_full_path if self.current_full_path else self.filename_input.text()
+       
         if not filename:
             message = "Error: Please enter a filename"
             self.status_bar.showMessage(message, 5000)
@@ -902,12 +1048,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         # Get version notes if enabled
         version_notes = ""
         if self.add_version_notes.isChecked():
-            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-            if notes_dialog.exec() == QDialog.Accepted:
-                version_notes = notes_dialog.get_notes()
-                print("Version notes added")
+            # Check for quick note first
+            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
+                version_notes = self.quick_note_input.text().strip()
+                self.quick_note_input.clear()  # Clear after using
+                print("Quick note added")
             else:
-                print("Skipped version notes")
+                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+                if notes_dialog.exec() == QDialog.Accepted:
+                    version_notes = notes_dialog.get_notes()
+                    print("Version notes added")
+                else:
+                    print("Skipped version notes")
         
         # Perform the save operation
         result, message, new_file_path = savePlus_core.save_plus_proc(filename)
@@ -925,7 +1077,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 # Update version history
                 self.version_history.add_version(new_file_path, version_notes)
                 self.populate_recent_files()
-                              
+
+                # Update last save status
+                self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")  # Green
+                self.last_save_indicator.setToolTip("Recent save - you're up to date")
+                save_time = time.strftime("%H:%M:%S", time.localtime())
+                self.last_save_status.setText(f"Last saved: {save_time}")
+                self.update_version_preview()
+
                 # Reset the backup timer
                 self.last_backup_time = time.time()
                 
@@ -1020,14 +1179,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 return
         
         # Get version notes if enabled
+        # Get version notes if enabled
         version_notes = ""
         if self.add_version_notes.isChecked():
-            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-            if notes_dialog.exec() == QDialog.Accepted:
-                version_notes = notes_dialog.get_notes()
-                print("Version notes added")
+            # Check for quick note first
+            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
+                version_notes = self.quick_note_input.text().strip()
+                self.quick_note_input.clear()  # Clear after using
+                print("Quick note added")
             else:
-                print("Skipped version notes")
+                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+                if notes_dialog.exec() == QDialog.Accepted:
+                    version_notes = notes_dialog.get_notes()
+                    print("Version notes added")
+                else:
+                    print("Skipped version notes")
         
         # Make sure directory exists
         directory = os.path.dirname(filename)
@@ -1062,6 +1228,13 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.version_history.add_version(filename, version_notes)
             self.populate_recent_files()
                       
+            # Update last save status
+            self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")  # Green
+            self.last_save_indicator.setToolTip("Recent save - you're up to date")
+            save_time = time.strftime("%H:%M:%S", time.localtime())
+            self.last_save_status.setText(f"Last saved: {save_time}")
+            self.update_version_preview()
+
             # Reset the backup timer
             self.last_backup_time = time.time()
             
@@ -1167,6 +1340,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Update the filename input
             self.filename_input.setText(os.path.basename(file_path))
+            self.filename_input.setToolTip(file_path)  # Show full path on hover
             self.update_filename_preview()
             
             # Add these new lines to update the save location display
@@ -1357,8 +1531,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         current_time = time.time()
         elapsed_minutes = (current_time - self.last_save_time) / 60
         
-        # Get interval from preferences or spinbox
-        reminder_interval = self.reminder_interval_spinbox.value()
+        # Update indicator color based on time since last save
+        if elapsed_minutes >= reminder_interval:
+            # Red - Time to save
+            self.last_save_indicator.setStyleSheet("color: #F44336; font-size: 18px;")
+            self.last_save_indicator.setToolTip("Save recommended - it's been a while")
+        elif elapsed_minutes >= reminder_interval * 0.7:
+            # Yellow - Getting close to reminder time
+            self.last_save_indicator.setStyleSheet("color: #FFC107; font-size: 18px;")
+            self.last_save_indicator.setToolTip("Consider saving soon")
+        else:
+            # Green - Recent save
+            self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")
+            self.last_save_indicator.setToolTip("Recent save - you're up to date")
+
+            # Get interval from preferences or spinbox
+            reminder_interval = self.reminder_interval_spinbox.value()
         
         # Add debug prints to track what's happening
         print(f"[SavePlus Debug] Timer check - Current time: {time.ctime(current_time)}")
@@ -1698,6 +1886,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                     # Suggest a new filename with asset name
                     suggested_name = f"shot_{asset_name}_v001.ma"
                     self.filename_input.setText(suggested_name)
+                    self.filename_input.setToolTip(new_path)  # Show full path on hover
                     print(f"Created new suggested filename: {suggested_name}")
                 
                 self.update_filename_preview()
@@ -1706,7 +1895,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if not self.filename_input.text():
                 current_filename = os.path.basename(cmds.file(query=True, sceneName=True) or "untitled.ma")
                 new_path = os.path.join(reference_dir, current_filename)
-                self.filename_input.setText(new_path)
+                self.filename_input.setText(os.path.basename(new_path))
+                self.filename_input.setToolTip(new_path)  # Show full path on hover
                 self.update_filename_preview()
             
             message = f"Save location set to referenced character path: {reference_dir}"
@@ -1718,6 +1908,45 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.status_bar.showMessage(message, 5000)
             print(message)
             traceback.print_exc()
+
+    def update_version_preview(self):
+        """Update the version preview to show what the next save will be"""
+        try:
+            filename = self.filename_input.text()
+            if not filename:
+                self.version_preview_text.setText("N/A")
+                return
+                
+            # Get the base name and extension
+            base_name, ext = os.path.splitext(filename)
+            if not ext or (ext.lower() not in ['.ma', '.mb']):
+                # Use extension from dropdown
+                ext = '.ma' if self.filetype_combo.currentIndex() == 0 else '.mb'
+            
+            # Find the trailing number pattern
+            match = re.search(r'(\D*)(\d+)(\D*)$', base_name)
+            
+            if match:
+                # If a number is found
+                prefix = match.group(1)
+                number = match.group(2)
+                suffix = match.group(3)
+                
+                # Increment the number, preserving leading zeros
+                new_number = str(int(number) + 1).zfill(len(number))
+                new_base_name = prefix + new_number + suffix
+                new_filename = new_base_name + ext
+                
+                # Show original → new
+                self.version_preview_text.setText(f"{os.path.basename(filename)} → {new_filename}")
+            else:
+                # If no number is found, add "02" to the end
+                new_base_name = base_name + "02"
+                new_filename = new_base_name + ext
+                self.version_preview_text.setText(f"{os.path.basename(filename)} → {new_filename}")
+        except Exception as e:
+            savePlus_core.debug_print(f"Error updating version preview: {e}")
+            self.version_preview_text.setText("Error")
 
     def apply_ui_settings(self):
         """Apply UI settings from preferences"""
