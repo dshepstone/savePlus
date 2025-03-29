@@ -2,15 +2,10 @@
 SavePlus Main - Main UI class and functionality for the SavePlus tool
 Part of the SavePlus toolset for Maya 2025
 """
-import os
-import time
-import re
-import traceback
-import os
-import time
-import traceback
 
-from maya import cmds, mel
+import os
+import time
+import traceback
 from maya import cmds, mel
 
 from PySide6.QtWidgets import (QPushButton, QVBoxLayout, QLabel, QLineEdit, 
@@ -31,37 +26,6 @@ import savePlus_ui_components
 # Constants
 VERSION = savePlus_core.VERSION
 UNIQUE_IDENTIFIER = "SavePlus_v1_ToolButton"
-TIMER_COUNT = 0  # Add this line to track timer firing count
-
-def truncate_path(path, max_length=40):
-    """
-    Truncate a path for display by preserving the beginning and end
-    while replacing the middle with ellipsis if too long.
-    """
-    if not path or len(path) <= max_length:
-        return path
-        
-    # Keep the drive or network location part
-    drive, remainder = os.path.splitdrive(path)
-    
-    # Separate the filename from the directory path
-    directory, filename = os.path.split(remainder)
-    
-    # Calculate how much of the directory we can show
-    # We want to show the beginning and end of the directory path
-    available_length = max_length - len(drive) - len(filename) - 5  # 5 for "/.../"
-    
-    if available_length <= 0:
-        # Path is too long, just show drive and filename
-        return f"{drive}/.../{filename}"
-    
-    half_length = available_length // 2
-    
-    # Get the beginning and end of the directory path
-    dir_start = directory[:half_length]
-    dir_end = directory[-half_length:] if half_length > 0 else ""
-    
-    return f"{drive}{dir_start}/.../{dir_end}/{filename}"
 
 class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     """SavePlus UI Class - Modern interface with menus and log display"""
@@ -208,7 +172,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add tab widget to main layout
             main_layout.addWidget(self.tab_widget)
             
-            # --- SAVEPLUS TAB CONTENT ---
+           # --- SAVEPLUS TAB CONTENT ---
             
             # Create container widget for scrollable content
             self.container_widget = QWidget()
@@ -219,91 +183,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.container_layout.setContentsMargins(0, 0, 0, 0)
             self.container_layout.setSpacing(15)  # Increased spacing between sections
             self.container_layout.setAlignment(Qt.AlignTop)  # Keep elements aligned at the top
-
-            # Create save buttons at the TOP of interface
-            buttons_layout = QHBoxLayout()
-            buttons_layout.setContentsMargins(0, 10, 0, 10)  # Add some vertical padding
-
-            # Style buttons with consistent, modern appearance
-            button_style = """
-            QPushButton {
-                border-radius: 4px;
-                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                stop: 0 #3a3a3a, stop: 1 #2a2a2a);
-                border: 1px solid #444444;
-                padding: 6px 12px;
-                min-height: 30px;
-                color: #ffffff;  /* White text for maximum contrast */
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                stop: 0 #4a4a4a, stop: 1 #3a3a3a);
-                color: #e0e0e0;
-            }
-            QPushButton:pressed {
-                background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1,
-                                                stop: 0 #2a2a2a, stop: 1 #3a3a3a);
-                color: #ffffff;
-            }
-            """
-
-            # Create buttons with keyboard shortcut indicators
-            save_button = QPushButton("Save Plus (Ctrl+S)")
-            save_button.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
-            save_button.setMinimumHeight(40)
-            save_button.setStyleSheet(button_style)
-            save_button.clicked.connect(self.save_plus)
-
-            save_new_button = QPushButton("Save As New (Ctrl+Shift+S)")
-            save_new_button.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
-            save_new_button.setMinimumHeight(40)
-            save_new_button.setStyleSheet(button_style)
-            save_new_button.clicked.connect(self.save_as_new)
-
-            # New backup button
-            backup_button = QPushButton("Create Backup (Ctrl+B)")
-            backup_button.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
-            backup_button.setMinimumHeight(40)
-            backup_button.setStyleSheet(button_style)
-            backup_button.clicked.connect(self.create_backup)
-            backup_button.setToolTip("Create a backup copy of the current file")
-
-            buttons_layout.addWidget(save_button)
-            buttons_layout.addWidget(save_new_button)
-            buttons_layout.addWidget(backup_button)
-
-            # Add top save buttons to container layout
-            self.container_layout.addLayout(buttons_layout)
-
-            # Last save indicator and status
-            last_save_layout = QHBoxLayout()
-            last_save_layout.setContentsMargins(4, 2, 4, 2)
-
-            last_save_container = QFrame()
-            last_save_container.setStyleSheet("background-color: rgba(0, 0, 0, 0.2); border-radius: 3px;")
-            last_save_container.setLayout(last_save_layout)
-
-            self.last_save_indicator = QLabel("●")
-            self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")
-            self.last_save_indicator.setFixedWidth(20)
-
-            self.last_save_status = QLabel("Last saved: N/A")
-            self.last_save_status.setStyleSheet("color: #ffffff; font-size: 10px;")
-
-            last_save_layout.addWidget(self.last_save_indicator)
-            last_save_layout.addWidget(self.last_save_status)
-            last_save_layout.addStretch()
-
-            self.container_layout.addWidget(last_save_container)
-
-            # Add a subtle separator between buttons and sections
-            separator = QFrame()
-            separator.setFrameShape(QFrame.HLine)
-            separator.setFrameShadow(QFrame.Sunken)
-            separator.setStyleSheet("background-color: #e0e0e0; max-height: 1px;")
-            self.container_layout.addWidget(separator)
-            self.container_layout.addSpacing(10)  # Add space after separator
 
             # Create File Options section (expanded by default)
             self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=False)
@@ -318,12 +197,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             filename_layout = QHBoxLayout()
             self.filename_input = QLineEdit()
             self.filename_input.setMinimumWidth(250)
-            self.filename_input.textChanged.connect(self.update_version_preview)
-            self.filename_input.setMaximumWidth(350)  # Limit maximum width
-            self.filename_input.setTextMargins(2, 0, 2, 0)  # Add text margins
-            self.filename_input.home(False)  # Ensure text starts from beginning
-            # Store full path separately from display name
-            self.current_full_path = ""
             filename_layout.addWidget(self.filename_input)
 
             # Get current file name if available
@@ -354,35 +227,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add to form layout
             file_layout.addRow("Filename:", filename_layout)
 
-            # Add save location display label with path visualization
+            # Add save location display label (after the filename row)
             self.save_location_label = QLabel()
-            self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
+            self.save_location_label.setStyleSheet("color: #666666; font-size: 9px;")
             file_layout.addRow("Save Location:", self.save_location_label)
-
-            # Add version preview
-            version_preview_layout = QHBoxLayout()
-            version_preview_label = QLabel("Next version:")
-            version_preview_label.setStyleSheet("color: #666666; font-size: 11px;")
-
-            self.version_preview_icon = QLabel("→")
-            self.version_preview_icon.setStyleSheet("color: #0066CC; font-weight: bold;")
-
-            self.version_preview_text = QLabel("N/A")
-            self.version_preview_text.setStyleSheet("color: #0066CC; font-weight: bold;")
-
-            version_preview_layout.addWidget(version_preview_label)
-            version_preview_layout.addWidget(self.version_preview_icon)
-            version_preview_layout.addWidget(self.version_preview_text)
-            version_preview_layout.addStretch()
-
-            file_layout.addRow("", version_preview_layout)
 
             # Add file type selection
             self.filetype_combo = QComboBox()
             self.filetype_combo.addItems(["Maya ASCII (.ma)", "Maya Binary (.mb)"])
             self.filetype_combo.setFixedWidth(180)
             self.filetype_combo.currentIndexChanged.connect(self.update_filename_preview)
-            self.filetype_combo.currentIndexChanged.connect(self.update_version_preview)
             
             # Add option to use the current directory
             self.use_current_dir = QCheckBox("Use current directory")
@@ -394,18 +248,19 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Add timed save reminder checkbox with updated label
             self.enable_timed_warning = QCheckBox("Enable save reminder every")
-            self.enable_timed_warning.setChecked(False)  # Explicitly set to False by default
+            self.enable_timed_warning.setChecked(self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False))
             self.enable_timed_warning.stateChanged.connect(self.toggle_timed_warning)
             save_reminder_layout.addWidget(self.enable_timed_warning)
 
             # Add spinner for reminder interval
             self.reminder_interval_spinbox = QSpinBox()
             self.reminder_interval_spinbox.setRange(1, 60)
-            self.reminder_interval_spinbox.setValue(15)  # Default to 15 minutes
+            self.reminder_interval_spinbox.setValue(self.load_option_var(self.OPT_VAR_AUTO_SAVE_INTERVAL, 15))
             self.reminder_interval_spinbox.setSuffix(" minutes")
             self.reminder_interval_spinbox.setFixedWidth(100)
             self.reminder_interval_spinbox.valueChanged.connect(self.update_reminder_interval)
             save_reminder_layout.addWidget(self.reminder_interval_spinbox)
+            save_reminder_layout.addStretch()
             
             # Add version notes option
             self.add_version_notes = QCheckBox("Add version notes when saving")
@@ -413,6 +268,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.add_version_notes.setToolTip("Add notes for each version to track changes")
             
             # Add to form layout
+            file_layout.addRow("Filename:", filename_layout)
             file_layout.addRow("File Type:", self.filetype_combo)
             file_layout.addRow("", self.use_current_dir)
             file_layout.addRow("", save_reminder_layout)
@@ -519,17 +375,32 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add name_gen_section toggled signal connection
             self.name_gen_section.toggled.connect(self.adjust_window_size)
             
-            # Add Quick Notes section
-            quick_notes_layout = QHBoxLayout()
-            quick_notes_layout.setContentsMargins(0, 5, 0, 5)
-
-            self.quick_note_input = QLineEdit()
-            self.quick_note_input.setPlaceholderText("Add a quick note for next save...")
-
-            quick_notes_layout.addWidget(QLabel("Quick Note:"))
-            quick_notes_layout.addWidget(self.quick_note_input)
-
-            self.container_layout.addLayout(quick_notes_layout)
+            # Add save buttons
+            buttons_layout = QHBoxLayout()
+            buttons_layout.setContentsMargins(0, 10, 0, 10)  # Add some vertical padding
+            
+            save_button = QPushButton("Save Plus")
+            save_button.setIcon(self.style().standardIcon(QStyle.SP_DialogSaveButton))
+            save_button.setMinimumHeight(40)
+            save_button.clicked.connect(self.save_plus)
+            
+            save_new_button = QPushButton("Save As New")
+            save_new_button.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
+            save_new_button.setMinimumHeight(40)
+            save_new_button.clicked.connect(self.save_as_new)
+            
+            # New backup button
+            backup_button = QPushButton("Create Backup")
+            backup_button.setIcon(self.style().standardIcon(QStyle.SP_DriveFDIcon))
+            backup_button.setMinimumHeight(40)
+            backup_button.clicked.connect(self.create_backup)
+            backup_button.setToolTip("Create a backup copy of the current file")
+            
+            buttons_layout.addWidget(save_button)
+            buttons_layout.addWidget(save_new_button)
+            buttons_layout.addWidget(backup_button)
+            
+            self.container_layout.addLayout(buttons_layout)
             
             # Create Log section (collapsed by default)
             self.log_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Log Output", collapsed=True)
@@ -733,11 +604,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             ui_layout.addRow("", self.pref_file_expanded)
             
             self.pref_name_expanded = QCheckBox("Name Generator section expanded by default")
-            self.pref_name_expanded.setChecked(False)  # Default to collapsed
             ui_layout.addRow("", self.pref_name_expanded)
             
             self.pref_log_expanded = QCheckBox("Log Output section expanded by default")
-            self.pref_log_expanded.setChecked(False)  # Default to collapsed
             ui_layout.addRow("", self.pref_log_expanded)
             
             # Add to preferences layout
@@ -759,7 +628,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Update filename preview initially
             self.update_filename_preview()
-            self.update_version_preview()
             
             # Setup log redirector
             self.log_redirector = savePlus_ui_components.LogRedirector(self.log_text)
@@ -767,17 +635,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Log initialization message
             print("SavePlus UI initialized successfully")
+            print("Setting up temporary test interval for reminder")
+            self.reminder_interval_spinbox.setValue(0.2)  # Set to 0.2 minutes (12 seconds) for testing
+            self.enable_timed_warning.setChecked(True)  # Force enable for testing
             
-           # Setup timer for save reminders - MAKE SURE THIS IS IN __init__
-            self.timer_job_id = None  # Initialize scriptJob ID
+            # Setup timer for save reminders
             self.last_save_time = time.time()
-            self.last_timer_check = time.time()
-            self.save_timer = QTimer()  # Create without parent for Maya compatibility
-            self.save_timer.setTimerType(QtCore.Qt.CoarseTimer)  # More reliable timer type
+            self.save_timer = QTimer(self)
             self.save_timer.timeout.connect(self.check_save_time)
-            print("[SavePlus Debug] Qt timer created (not started)")
 
-            # Enable this timer in Maya's event loop - KEEP THIS IMPORTANT CODE
+            # Enable this timer in Maya's event loop - ADD THIS CODE RIGHT HERE
             if hasattr(self, 'save_timer'):
                 # Connect to Maya's main loop if needed
                 try:
@@ -786,109 +653,44 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 except Exception as e:
                     print(f"[SavePlus Debug] Using standard Qt timer: {e}")
 
-            # Load timer preference without triggering stateChanged
-            timer_enabled = self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False)
-            print(f"[SavePlus Debug] Loaded timer preference: enabled={timer_enabled}")
-
-            # Set checkbox state without triggering signals
-            self.enable_timed_warning.blockSignals(True)
-            self.enable_timed_warning.setChecked(timer_enabled)
-            self.enable_timed_warning.blockSignals(False)
-
-            # Schedule timer setup if enabled in preferences (delay to ensure UI is ready)
-            if timer_enabled:
-                print("[SavePlus Debug] Timer enabled in preferences, scheduling activation")
-                QtCore.QTimer.singleShot(1000, self.setup_timer)
-            else:
-                print("[SavePlus Debug] Timer disabled in preferences")
-
+            # Start timers if options are enabled
+            if self.enable_timed_warning.isChecked():
+                if not self.save_timer.isActive():
+                    # For testing, check every 10 seconds instead of every minute
+                    self.save_timer.start(10000)  # 10 seconds (change back to 60000 for production)
+                    print("[SavePlus Debug] Timer started during initialization")
+                    print(f"[SavePlus Debug] Current time: {time.ctime(self.last_save_time)}")
+            
             # Setup timer for auto-backup
             self.last_backup_time = time.time()
             self.backup_timer = QTimer(self)
             self.backup_timer.timeout.connect(self.check_backup_time)
-
+            
             # Flag to track first-time save
             self.is_first_save = not current_file
-
+            
             if self.pref_enable_auto_backup.isChecked():
                 self.backup_timer.start(60000)  # Check every minute
-
+            
             # Connect tab changed signal to update history
             self.tab_widget.currentChanged.connect(self.on_tab_changed)
-
+            
             # Load preferences
             self.load_preferences()
-
+            
             # Schedule initial window sizing after UI is fully constructed
             QtCore.QTimer.singleShot(200, self.adjust_window_size)
-
+            
             # Initial population of history
             self.populate_history()
-
-            # Initialize the timer system after UI is loaded
-            QtCore.QTimer.singleShot(2000, self.bootstrap_timer)
-
-            # Force multiple initial timer checks to verify operation
-            if self.enable_timed_warning.isChecked():
-                print("\n" + "#"*70)
-                print("## STARTING TIMER VERIFICATION SEQUENCE")
-                print("#"*70 + "\n")
                 
-                # Reset the counter
-                if not hasattr(SavePlusUI, 'TIMER_COUNT'):
-                    SavePlusUI.TIMER_COUNT = 0
-                SavePlusUI.TIMER_COUNT = 0
-                
-                # Simulate last save being 4 minutes ago for immediate testing
-                print("[SavePlus Debug] Setting up timer for immediate testing")
-                self.last_save_time = time.time() - (4 * 60)
-                
-                # Schedule multiple checks at different intervals
-                QtCore.QTimer.singleShot(1000, lambda: print("\n[VERIFY] Scheduling initial timer check #1"))
-                QtCore.QTimer.singleShot(1500, self.check_save_time)
-                
-                QtCore.QTimer.singleShot(6000, lambda: print("\n[VERIFY] Scheduling initial timer check #2"))
-                QtCore.QTimer.singleShot(6500, self.check_save_time)
-                
-                QtCore.QTimer.singleShot(11000, lambda: print("\n[VERIFY] Scheduling initial timer check #3"))
-                QtCore.QTimer.singleShot(11500, self.check_save_time)
-                
-                # Force UI update
-                QtCore.QTimer.singleShot(16000, lambda: print("[SavePlus Debug] Timer verification sequence complete"))
-                
-                # Setup a more robust timer initialization
-                self.save_timer = QTimer()
-                self.save_timer.setTimerType(QtCore.Qt.CoarseTimer)
-                self.save_timer.timeout.connect(self.check_save_time)
-                print("[DEBUG] Qt timer created with proper signal connection")
-
-                # Load the timer state from preferences without triggering toggle
-                timer_enabled = self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False)
-                if timer_enabled:
-                    print("[DEBUG] Timer should be enabled from preferences")
-                    # Block signals to prevent immediate toggle
-                    self.enable_timed_warning.blockSignals(True)
-                    self.enable_timed_warning.setChecked(True)
-                    self.enable_timed_warning.blockSignals(False)
-                    # Start timer after a delay
-                    QtCore.QTimer.singleShot(1000, lambda: self.toggle_timed_warning(2))
-
         except Exception as e:
             error_message = f"Error initializing SavePlus UI: {str(e)}"
             print(error_message)
             traceback.print_exc()
             cmds.confirmDialog(title="SavePlus Error", 
-                            message=f"Error loading SavePlus: {str(e)}\n\nCheck script editor for details.", 
-                            button=["OK"], defaultButton="OK")
-
-    def update_filename_display(self, full_path):
-        """Update the filename input to show only the basename while storing the full path"""
-        self.current_full_path = full_path
-        basename = os.path.basename(full_path) if full_path else ""
-        self.filename_input.setText(basename)
-        self.filename_input.setToolTip(full_path)  # Show full path on hover
-        self.update_filename_preview()
-        self.update_version_preview()
+                              message=f"Error loading SavePlus: {str(e)}\n\nCheck script editor for details.", 
+                              button=["OK"], defaultButton="OK")
 
     def update_reminder_interval(self, value):
         """Update the save reminder interval"""
@@ -998,9 +800,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # If we have a filename, combine with the new directory
             if current_filename:
                 new_path = os.path.join(directory, current_filename)
-                self.update_filename_display(new_path)
-                self.filename_input.setText(os.path.basename(new_path))
-                self.filename_input.setToolTip(new_path)  # Show full path on hover
+                self.filename_input.setText(new_path)
                 print(f"Selected directory: {directory}")
                 print(f"Updated path: {new_path}")
             else:
@@ -1020,22 +820,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def update_save_location_display(self):
         """Update the display of the current save location"""
         if hasattr(self, 'save_location_label'):
-            full_path = ""
             if self.selected_directory:
-                full_path = self.selected_directory
+                self.save_location_label.setText(self.selected_directory)
             elif hasattr(self, 'pref_default_path') and self.pref_default_path.text() and self.use_current_dir.isChecked():
-                full_path = self.pref_default_path.text()
+                self.save_location_label.setText(self.pref_default_path.text())
             else:
                 current_file = cmds.file(query=True, sceneName=True)
                 if current_file:
-                    full_path = os.path.dirname(current_file)
+                    self.save_location_label.setText(os.path.dirname(current_file))
                 else:
-                    full_path = "Default Maya project"
-            
-            # Display truncated path but set full path as tooltip
-            truncated_path = truncate_path(full_path, 40)  # Adjust max_length as needed
-            self.save_location_label.setText(truncated_path)
-            self.save_location_label.setToolTip(full_path)  # Show full path on hover
+                    self.save_location_label.setText("Default Maya project")
 
     def browse_default_save_location(self):
         """Open file browser to select default save location directory"""
@@ -1068,8 +862,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         print("Starting Save Plus operation...")
         # Reset the save timer immediately when save is attempted
         self.last_save_time = time.time()
-        filename = self.current_full_path if self.current_full_path else self.filename_input.text()
-       
+        filename = self.filename_input.text()
+        
         if not filename:
             message = "Error: Please enter a filename"
             self.status_bar.showMessage(message, 5000)
@@ -1108,18 +902,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         # Get version notes if enabled
         version_notes = ""
         if self.add_version_notes.isChecked():
-            # Check for quick note first
-            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
-                version_notes = self.quick_note_input.text().strip()
-                self.quick_note_input.clear()  # Clear after using
-                print("Quick note added")
+            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+            if notes_dialog.exec() == QDialog.Accepted:
+                version_notes = notes_dialog.get_notes()
+                print("Version notes added")
             else:
-                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-                if notes_dialog.exec() == QDialog.Accepted:
-                    version_notes = notes_dialog.get_notes()
-                    print("Version notes added")
-                else:
-                    print("Skipped version notes")
+                print("Skipped version notes")
         
         # Perform the save operation
         result, message, new_file_path = savePlus_core.save_plus_proc(filename)
@@ -1137,14 +925,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 # Update version history
                 self.version_history.add_version(new_file_path, version_notes)
                 self.populate_recent_files()
-
-                # Update last save status
-                self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")  # Green
-                self.last_save_indicator.setToolTip("Recent save - you're up to date")
-                save_time = time.strftime("%H:%M:%S", time.localtime())
-                self.last_save_status.setText(f"Last saved: {save_time}")
-                self.update_version_preview()
-
+                              
                 # Reset the backup timer
                 self.last_backup_time = time.time()
                 
@@ -1239,21 +1020,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 return
         
         # Get version notes if enabled
-        # Get version notes if enabled
         version_notes = ""
         if self.add_version_notes.isChecked():
-            # Check for quick note first
-            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
-                version_notes = self.quick_note_input.text().strip()
-                self.quick_note_input.clear()  # Clear after using
-                print("Quick note added")
+            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+            if notes_dialog.exec() == QDialog.Accepted:
+                version_notes = notes_dialog.get_notes()
+                print("Version notes added")
             else:
-                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-                if notes_dialog.exec() == QDialog.Accepted:
-                    version_notes = notes_dialog.get_notes()
-                    print("Version notes added")
-                else:
-                    print("Skipped version notes")
+                print("Skipped version notes")
         
         # Make sure directory exists
         directory = os.path.dirname(filename)
@@ -1288,13 +1062,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.version_history.add_version(filename, version_notes)
             self.populate_recent_files()
                       
-            # Update last save status
-            self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")  # Green
-            self.last_save_indicator.setToolTip("Recent save - you're up to date")
-            save_time = time.strftime("%H:%M:%S", time.localtime())
-            self.last_save_status.setText(f"Last saved: {save_time}")
-            self.update_version_preview()
-
             # Reset the backup timer
             self.last_backup_time = time.time()
             
@@ -1400,7 +1167,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Update the filename input
             self.filename_input.setText(os.path.basename(file_path))
-            self.filename_input.setToolTip(file_path)  # Show full path on hover
             self.update_filename_preview()
             
             # Add these new lines to update the save location display
@@ -1572,186 +1338,81 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 self.filename_preview.setText("No filename")
     
     def toggle_timed_warning(self, state):
-        """Toggle the timed warning feature using Maya's scriptJob system"""
-        print(f"\n[DEBUG] toggle_timed_warning called with state: {state}")
-        print(f"[DEBUG] State type: {type(state)}, Qt.Checked value: {Qt.Checked}")
-        
-        try:
-            # Use direct integer comparison - 2 is checked, 0 is unchecked
-            if state == 2 or state is True or state == Qt.Checked:
-                print("\n" + "="*70)
-                print("               TIMER ENABLED - USING MAYA SCRIPTJOB")
-                print("="*70 + "\n")
-                
-                # Set last save time to current time
-                self.last_save_time = time.time()
-                
-                # Remove any existing scriptJob
-                if hasattr(self, 'timer_job_id') and self.timer_job_id is not None:
-                    try:
-                        cmds.scriptJob(kill=self.timer_job_id)
-                        print(f"[DEBUG] Removed existing timer scriptJob: {self.timer_job_id}")
-                    except Exception as e:
-                        print(f"[DEBUG] Error removing timer scriptJob: {e}")
-                
-                # Use directly scheduled Qt timer instead of scriptJob
-                # This is simpler and more reliable across Maya versions
-                if hasattr(self, 'save_timer'):
-                    self.save_timer.stop()  # Stop if already running
-                    self.save_timer.setInterval(5000)  # 5 seconds
-                    self.save_timer.start()
-                    print("[DEBUG] Started Qt timer with 5-second interval")
-                    print(f"[DEBUG] Timer active status: {self.save_timer.isActive()}")
-                
-                # Save the setting
-                cmds.optionVar(iv=(self.OPT_VAR_ENABLE_TIMED_WARNING, 1))
-                
+        """Toggle the timed warning feature on or off"""
+        if hasattr(self, 'save_timer'):
+            if state == Qt.Checked:
+                self.save_timer.start(60000)  # Check every minute
+                reminder_interval = self.reminder_interval_spinbox.value()
+                print(f"[SavePlus Debug] Save reminder ENABLED with {reminder_interval}-minute interval")
+                print(f"[SavePlus Debug] Timer check frequency: every 60 seconds")
             else:
-                print("\n" + "="*70)
-                print("               TIMER DISABLED - STOPPING TIMER")
-                print("="*70 + "\n")
-                
-                # Stop Qt timer
-                if hasattr(self, 'save_timer') and self.save_timer.isActive():
-                    self.save_timer.stop()
-                    print("[DEBUG] Stopped Qt timer")
-                
-                # Kill the scriptJob if it exists (just to be thorough)
-                if hasattr(self, 'timer_job_id') and self.timer_job_id is not None:
-                    try:
-                        cmds.scriptJob(kill=self.timer_job_id)
-                        print(f"[DEBUG] Killed timer scriptJob: {self.timer_job_id}")
-                        self.timer_job_id = None
-                    except Exception as e:
-                        print(f"[DEBUG] Error killing scriptJob: {e}")
-                        self.timer_job_id = None
-                
-                # Save the setting
-                cmds.optionVar(iv=(self.OPT_VAR_ENABLE_TIMED_WARNING, 0))
-                
-        except Exception as e:
-            print(f"[ERROR] Timer toggle failed: {str(e)}")
-            traceback.print_exc()
+                self.save_timer.stop()
+                print("[SavePlus Debug] Save reminder DISABLED")
+            
+            # Save setting
+            cmds.optionVar(iv=(self.OPT_VAR_ENABLE_TIMED_WARNING, state == Qt.Checked))
     
     def check_save_time(self):
         """Check if enough time has passed to show a save reminder"""
-        try:
-            # Increment and display counter - VERY VISIBLE logging
-            if not hasattr(SavePlusUI, 'TIMER_COUNT'):
-                SavePlusUI.TIMER_COUNT = 0
+        current_time = time.time()
+        elapsed_minutes = (current_time - self.last_save_time) / 60
+        
+        # Get interval from preferences or spinbox
+        reminder_interval = self.reminder_interval_spinbox.value()
+        
+        # Add debug prints to track what's happening
+        print(f"[SavePlus Debug] Timer check - Current time: {time.ctime(current_time)}")
+        print(f"[SavePlus Debug] Last save time: {time.ctime(self.last_save_time)}")
+        print(f"[SavePlus Debug] Elapsed: {elapsed_minutes:.2f} min, Threshold: {reminder_interval} min")
+              
+        # Show warning if enough time has passed
+        if elapsed_minutes >= reminder_interval:
+            print(f"[SavePlus Debug] Showing reminder dialog (interval: {reminder_interval} min)")
+            # Create dialog with the current reminder interval
+            warning_dialog = savePlus_ui_components.TimedWarningDialog(self, interval=reminder_interval)
             
-            SavePlusUI.TIMER_COUNT += 1
-            print("\n" + "*"*70)
-            print(f"*** TIMER CHECK #{SavePlusUI.TIMER_COUNT} at {time.strftime('%H:%M:%S')} ***")
-            print("*"*70 + "\n")
+            # Show the dialog and get the user's response
+            result = warning_dialog.exec()
             
-            # Get current time and calculate elapsed time
-            current_time = time.time()
-            elapsed_minutes = (current_time - self.last_save_time) / 60
-            
-            # CRITICAL FIX: Get interval BEFORE using it
-            reminder_interval = self.reminder_interval_spinbox.value()
-            
-            # Detailed debug information
-            print(f"[Timer Status] Last save: {time.strftime('%H:%M:%S', time.localtime(self.last_save_time))}")
-            print(f"[Timer Status] Elapsed time: {elapsed_minutes:.2f} minutes")
-            print(f"[Timer Status] Reminder threshold: {reminder_interval} minutes")
-            print(f"[Timer Status] Timer interval: {self.save_timer.interval()/1000} seconds")
-            print(f"[Timer Status] Timer active: {self.save_timer.isActive()}")
-            
-            # Update indicator color based on time since last save
-            if elapsed_minutes >= reminder_interval:
-                # Red - Time to save
-                self.last_save_indicator.setStyleSheet("color: #F44336; font-size: 18px;")
-                self.last_save_indicator.setToolTip("Save recommended - it's been a while")
-                print("[Timer Status] Indicator: RED (save needed)")
-            elif elapsed_minutes >= reminder_interval * 0.7:
-                # Yellow - Getting close to reminder time
-                self.last_save_indicator.setStyleSheet("color: #FFC107; font-size: 18px;")
-                self.last_save_indicator.setToolTip("Consider saving soon")
-                print("[Timer Status] Indicator: YELLOW (getting close)")
-            else:
-                # Green - Recent save
-                self.last_save_indicator.setStyleSheet("color: #4CAF50; font-size: 18px;")
-                self.last_save_indicator.setToolTip("Recent save - you're up to date")
-                print("[Timer Status] Indicator: GREEN (recently saved)")
-            
-            # Show warning if enough time has passed
-            if elapsed_minutes >= reminder_interval:
-                print("\n" + "!"*70)
-                print(f"!!! TIME TO SHOW REMINDER DIALOG !!! (Elapsed: {elapsed_minutes:.2f} min > Threshold: {reminder_interval} min)")
-                print("!"*70 + "\n")
-                
-                # Create and show the dialog
-                warning_dialog = savePlus_ui_components.TimedWarningDialog(self, first_time=False, interval=int(elapsed_minutes))
-                
-                # Force dialog to stay on top
-                warning_dialog.setWindowFlags(warning_dialog.windowFlags() | Qt.WindowStaysOnTopHint)
-                
-                # Show the dialog and get response
-                print("[Dialog] Showing save reminder dialog...")
-                result = warning_dialog.exec()
-                
-                if result == QDialog.Accepted:
-                    # User clicked "Save Now" - Ask which save method to use
-                    print("[Dialog] User chose to save now")
-                    msgBox = QMessageBox(self)
-                    msgBox.setWindowTitle("Save Method")
-                    msgBox.setText("How would you like to save your file?")
+            # Handle the user's choice
+            if result == QDialog.Accepted:
+                # User clicked "Save Now" - Ask which save method to use
+                msgBox = QMessageBox(self)
+                msgBox.setWindowTitle("Save Method")
+                msgBox.setText("How would you like to save your file?")
 
-                    savePlusButton = msgBox.addButton("Save Plus (Increment)", QMessageBox.ActionRole)
-                    saveAsNewButton = msgBox.addButton("Save As New", QMessageBox.ActionRole)
-                    cancelButton = msgBox.addButton("Cancel", QMessageBox.RejectRole)
+                savePlusButton = msgBox.addButton("Save Plus (Increment)", QMessageBox.ActionRole)
+                saveAsNewButton = msgBox.addButton("Save As New", QMessageBox.ActionRole)
+                cancelButton = msgBox.addButton("Cancel", QMessageBox.RejectRole)
 
-                    msgBox.setDefaultButton(savePlusButton)  # Default to Save Plus
-                    msgBox.exec()
+                msgBox.setDefaultButton(savePlusButton)  # Default to Save Plus
+                msgBox.exec()
 
-                    clickedButton = msgBox.clickedButton()
+                clickedButton = msgBox.clickedButton()
 
-                    if clickedButton == savePlusButton:
-                        print("[Dialog] User chose Save Plus (increment)")
-                        self.save_plus()
-                    elif clickedButton == saveAsNewButton:
-                        print("[Dialog] User chose Save As New")
-                        self.save_as_new()
-                    else:
-                        print("[Dialog] User cancelled save operation")
+                if clickedButton == savePlusButton:
+                    save_choice = 0
+                elif clickedButton == saveAsNewButton:
+                    save_choice = 1
                 else:
-                    # User clicked "Remind Me Later"
-                    print("[Dialog] User chose to be reminded later")
-                    # Reset timer to remind again in 2 minutes
-                    self.last_save_time = current_time - ((reminder_interval - 2) * 60)
-                    print(f"[Timer Status] Last save time adjusted to remind again in 2 minutes")
+                    save_choice = 2
+                
+                if save_choice == 0:  # Save Plus
+                    print("[SavePlus Debug] User chose Save Plus")
+                    self.save_plus()
+                elif save_choice == 1:  # Save As New
+                    print("[SavePlus Debug] User chose Save As New")
+                    self.save_as_new()
+                # If user chooses Cancel (option 2), do nothing
             else:
-                print(f"[Timer Status] Not time for reminder yet. Will remind in {reminder_interval - elapsed_minutes:.2f} minutes")
-            
-            # End of timer check
-            print("\n" + "-"*70)
-            print(f"--- TIMER CHECK #{SavePlusUI.TIMER_COUNT} COMPLETED ---")
-            print("-"*70 + "\n")
-            
-        except Exception as e:
-            # Comprehensive error reporting
-            print("\n" + "X"*70)
-            print("XXX ERROR IN TIMER CHECK XXX")
-            print("X"*70)
-            print(f"Error message: {str(e)}")
-            print("Stack trace:")
-            traceback.print_exc()
-            print("X"*70 + "\n")
-
-    def setup_timer(self):
-        """Set up the save reminder timer based on current preferences"""
-        try:
-            if self.enable_timed_warning.isChecked():
-                print("[DEBUG] Setting up timer via scriptJob")
-                self.toggle_timed_warning(Qt.Checked)
-            else:
-                print("[DEBUG] Timer setup skipped (not enabled)")
-        except Exception as e:
-            print(f"[ERROR] Timer setup failed: {str(e)}")
-            traceback.print_exc()
-
+                # User clicked "Remind Me Later"
+                # Reset timer to remind them again in 5 minutes (or some shorter interval)
+                shorter_reminder = min(5, reminder_interval/2)  # Either 5 minutes or half the interval, whichever is smaller
+                self.last_save_time = current_time - ((reminder_interval - shorter_reminder) * 60)
+                print(f"[SavePlus Debug] Reminder postponed. Will remind again in {shorter_reminder} minutes")
+        else:
+            print(f"[SavePlus Debug] Not time for reminder yet. Next reminder in {reminder_interval - elapsed_minutes:.2f} minutes")
+        
     def check_backup_time(self):
         """Check if enough time has passed to create an auto-backup"""
         if not self.pref_enable_auto_backup.isChecked():
@@ -1937,17 +1598,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 add_version_notes = bool(cmds.optionVar(q=self.OPT_VAR_ADD_VERSION_NOTES))
                 self.add_version_notes.setChecked(add_version_notes)
             
-            # Load timed warning preference
-            if cmds.optionVar(exists=self.OPT_VAR_ENABLE_TIMED_WARNING):
-                enable_timed_warning = bool(cmds.optionVar(q=self.OPT_VAR_ENABLE_TIMED_WARNING))
-                print(f"[DEBUG] Loading timed warning preference: {enable_timed_warning}")
-                
-                # Only update if different to avoid triggering the stateChanged signal
-                if self.enable_timed_warning.isChecked() != enable_timed_warning:
-                    self.enable_timed_warning.blockSignals(True)
-                    self.enable_timed_warning.setChecked(enable_timed_warning)
-                    self.enable_timed_warning.blockSignals(False)
-
             # Apply UI settings
             self.apply_ui_settings()
         except Exception as e:
@@ -2048,7 +1698,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                     # Suggest a new filename with asset name
                     suggested_name = f"shot_{asset_name}_v001.ma"
                     self.filename_input.setText(suggested_name)
-                    self.filename_input.setToolTip(new_path)  # Show full path on hover
                     print(f"Created new suggested filename: {suggested_name}")
                 
                 self.update_filename_preview()
@@ -2057,8 +1706,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if not self.filename_input.text():
                 current_filename = os.path.basename(cmds.file(query=True, sceneName=True) or "untitled.ma")
                 new_path = os.path.join(reference_dir, current_filename)
-                self.filename_input.setText(os.path.basename(new_path))
-                self.filename_input.setToolTip(new_path)  # Show full path on hover
+                self.filename_input.setText(new_path)
                 self.update_filename_preview()
             
             message = f"Save location set to referenced character path: {reference_dir}"
@@ -2070,158 +1718,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.status_bar.showMessage(message, 5000)
             print(message)
             traceback.print_exc()
-
-    def update_version_preview(self):
-        """Update the version preview to show what the next save will be"""
-        try:
-            filename = self.filename_input.text()
-            if not filename:
-                self.version_preview_text.setText("N/A")
-                return
-                
-            # Get the base name and extension
-            base_name, ext = os.path.splitext(filename)
-            if not ext or (ext.lower() not in ['.ma', '.mb']):
-                # Use extension from dropdown
-                ext = '.ma' if self.filetype_combo.currentIndex() == 0 else '.mb'
-            
-            # Find the trailing number pattern
-            match = re.search(r'(\D*)(\d+)(\D*)$', base_name)
-            
-            if match:
-                # If a number is found
-                prefix = match.group(1)
-                number = match.group(2)
-                suffix = match.group(3)
-                
-                # Increment the number, preserving leading zeros
-                new_number = str(int(number) + 1).zfill(len(number))
-                new_base_name = prefix + new_number + suffix
-                new_filename = new_base_name + ext
-                
-                # Show original → new
-                self.version_preview_text.setText(f"{os.path.basename(filename)} → {new_filename}")
-            else:
-                # If no number is found, add "02" to the end
-                new_base_name = base_name + "02"
-                new_filename = new_base_name + ext
-                self.version_preview_text.setText(f"{os.path.basename(filename)} → {new_filename}")
-        except Exception as e:
-            savePlus_core.debug_print(f"Error updating version preview: {e}")
-            self.version_preview_text.setText("Error")
-
-    def force_timer_test(self):
-        """Force the timer to run for testing purposes"""
-        print("\n" + "#"*70)
-        print("#     FORCED TIMER TEST - BYPASSING NORMAL ACTIVATION     #")
-        print("#"*70 + "\n")
-        
-        try:
-            # Create a brand new timer to avoid any issues with existing one
-            test_timer = QTimer()
-            test_timer.setTimerType(QtCore.Qt.CoarseTimer)
-            
-            # Set up a test function to run
-            def test_check():
-                print(f"[TEST] Direct timer check at {time.strftime('%H:%M:%S')}")
-                self.check_save_time()  # Call the regular check method
-            
-            # Connect and start
-            test_timer.timeout.connect(test_check)
-            test_timer.start(5000)  # 5 second interval
-            
-            print(f"[TEST] Direct test timer created and started")
-            print(f"[TEST] Timer active: {test_timer.isActive()}")
-            
-            # Force immediate checks
-            test_check()  # Run immediately
-            
-            # Return the timer so it doesn't get garbage collected
-            return test_timer
-        
-        except Exception as e:
-            print(f"[ERROR] Force timer test failed: {str(e)}")
-            traceback.print_exc()
-            return None
-
-    def check_save_time_maya(self):
-        """Maya scriptJob handler for timeChange events"""
-        try:
-            current_time = time.time()
-            
-            # Initialize if needed
-            if not hasattr(self, 'last_timer_check'):
-                self.last_timer_check = 0
-                print("[DEBUG] Initialized last_timer_check")
-                
-            # Only check every 5 seconds to avoid too frequent checks
-            time_since_check = current_time - self.last_timer_check
-            if time_since_check < 5:
-                return
-                
-            # Update last check time
-            self.last_timer_check = current_time
-            print(f"[DEBUG] Maya timeChange timer check at {time.strftime('%H:%M:%S')}")
-            
-            # Call the regular check method
-            self.check_save_time()
-        except Exception as e:
-            print(f"[ERROR] Timer check failed in scriptJob: {str(e)}")
-            traceback.print_exc()
-
-    def closeEvent(self, event):
-        """Handle clean up when window is closed"""
-        savePlus_core.debug_print("Closing SavePlus UI")
-        try:
-            # Stop redirecting output
-            if hasattr(self, 'log_redirector') and self.log_redirector:
-                self.log_redirector.stop_redirect()
-            
-            # Stop Qt timer
-            if hasattr(self, 'save_timer') and self.save_timer.isActive():
-                self.save_timer.stop()
-                print("[DEBUG] Stopped Qt timer during close")
-                
-            # Kill any active scriptJobs
-            if hasattr(self, 'timer_job_id') and self.timer_job_id is not None:
-                try:
-                    cmds.scriptJob(kill=self.timer_job_id)
-                    print(f"[DEBUG] Killed timer scriptJob during close: {self.timer_job_id}")
-                    self.timer_job_id = None
-                except Exception as e:
-                    print(f"[DEBUG] Error killing scriptJob during close: {e}")
-            
-            # Stop backup timer
-            if hasattr(self, 'backup_timer') and self.backup_timer:
-                self.backup_timer.stop()
-            
-            # Disable auto resize to prevent errors during shutdown
-            self.auto_resize_enabled = False
-        except Exception as e:
-            savePlus_core.debug_print(f"Error during close: {e}")
-        
-        super(SavePlusUI, self).closeEvent(event)
-
-    def bootstrap_timer(self):
-        """Safely establish the timer after all UI components are ready"""
-        print("\n[DEBUG] ========= BOOTSTRAP TIMER STARTING =========")
-        
-        # Initialize timer attributes
-        if not hasattr(self, 'timer_job_id'):
-            self.timer_job_id = None
-        
-        # Get current preference state
-        timer_enabled = self.enable_timed_warning.isChecked()
-        print(f"[DEBUG] Current timer checkbox state: {timer_enabled}")
-        
-        # Only enable the timer if checked
-        if timer_enabled:
-            print("[DEBUG] Timer is enabled, setting up...")
-            self.toggle_timed_warning(Qt.Checked)
-        else:
-            print("[DEBUG] Timer is disabled, no action needed")
-        
-        print("[DEBUG] ========= BOOTSTRAP COMPLETE =========\n")
 
     def apply_ui_settings(self):
         """Apply UI settings from preferences"""
