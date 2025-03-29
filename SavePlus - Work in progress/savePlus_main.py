@@ -74,6 +74,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_VERSION_TYPE = "SavePlusVersionType"
     OPT_VAR_VERSION_NUMBER = "SavePlusVersionNumber"
     OPT_VAR_ENABLE_TIMED_WARNING = "SavePlusEnableTimedWarning"
+    OPT_VAR_PIPELINE_STAGE = "SavePlusPipelineStage"  # New option var for pipeline stage
     
     # Option variables for saving preferences
     OPT_VAR_DEFAULT_FILETYPE = "SavePlusDefaultFiletype"
@@ -467,17 +468,50 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.firstname_input.setText(self.load_option_var(self.OPT_VAR_FIRST_NAME, ""))
             self.firstname_input.setFixedWidth(200)
             
-            # Version type
-            version_type_layout = QHBoxLayout()
-            self.version_type_combo = QComboBox()
-            self.version_type_combo.addItems(["wip", "final"])
-            saved_type = self.load_option_var(self.OPT_VAR_VERSION_TYPE, "wip")
-            index = self.version_type_combo.findText(saved_type)
+            # Pipeline stage dropdown (replaces the simple version_type_combo)
+            pipeline_stage_layout = QHBoxLayout()
+            self.pipeline_stage_label = QLabel("Pipeline Stage:")
+
+            # Create the pipeline stage dropdown
+            self.pipeline_stage_combo = QComboBox()
+            self.pipeline_stage_combo.addItems([
+                "Layout", 
+                "Planning", 
+                "Blocking", 
+                "Blocking Plus", 
+                "Spline", 
+                "Polish", 
+                "Lighting", 
+                "Final"
+            ])
+            saved_stage = self.load_option_var(self.OPT_VAR_PIPELINE_STAGE, "Blocking")
+            index = self.pipeline_stage_combo.findText(saved_stage)
             if index >= 0:
-                self.version_type_combo.setCurrentIndex(index)
-            self.version_type_combo.setFixedWidth(100)
-            version_type_layout.addWidget(self.version_type_combo)
-            version_type_layout.addStretch()
+                self.pipeline_stage_combo.setCurrentIndex(index)
+            self.pipeline_stage_combo.setFixedWidth(120)
+
+            # Status dropdown (WIP or Final)
+            self.version_status_combo = QComboBox()
+            self.version_status_combo.addItems(["wip", "final"])
+            saved_type = self.load_option_var(self.OPT_VAR_VERSION_TYPE, "wip")
+            index = self.version_status_combo.findText(saved_type)
+            if index >= 0:
+                self.version_status_combo.setCurrentIndex(index)
+            self.version_status_combo.setFixedWidth(80)
+
+            self.pipeline_stage_combo.setItemData(0, "Camera angles, character and prop placement, and shot timing established", Qt.ToolTipRole)  # Layout
+            self.pipeline_stage_combo.setItemData(1, "Performance planning using reference footage and thumbnail sketches", Qt.ToolTipRole)  # Planning / Reference
+            self.pipeline_stage_combo.setItemData(2, "Key storytelling poses blocked in stepped mode with rough timing", Qt.ToolTipRole)  # Blocking
+            self.pipeline_stage_combo.setItemData(3, "Primary and secondary breakdowns added; refined timing, spacing, and arcs", Qt.ToolTipRole)  # Blocking Plus
+            self.pipeline_stage_combo.setItemData(4, "Converted to spline; cleaned interpolation, arcs, and spacing", Qt.ToolTipRole)  # Spline
+            self.pipeline_stage_combo.setItemData(5, "Final polish: facial animation, overlap, follow-through, and subtle details", Qt.ToolTipRole)  # Polish
+            self.pipeline_stage_combo.setItemData(6, "Lighting pass: establishing mood, depth, and render look", Qt.ToolTipRole)  # Lighting
+            self.pipeline_stage_combo.setItemData(7, "Shot approved: animation and visuals are final and ready for comp or submission", Qt.ToolTipRole)  # Final Output
+
+            # Add both dropdowns to the layout
+            pipeline_stage_layout.addWidget(self.pipeline_stage_combo)
+            pipeline_stage_layout.addWidget(self.version_status_combo)
+            pipeline_stage_layout.addStretch()
             
             # Version number
             version_number_layout = QHBoxLayout()
@@ -508,7 +542,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             name_gen_layout.addRow("Assignment:", assignment_layout)
             name_gen_layout.addRow("Last Name:", self.lastname_input)
             name_gen_layout.addRow("First Name:", self.firstname_input)
-            name_gen_layout.addRow("Type:", version_type_layout)
+            name_gen_layout.addRow("Stage:", pipeline_stage_layout)
             name_gen_layout.addRow("Version:", version_number_layout)
             name_gen_layout.addRow("Preview:", self.filename_preview)
             name_gen_layout.addRow("", buttons_layout)
@@ -1521,15 +1555,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         assignment_num = str(self.assignment_spinbox.value()).zfill(2)
         last_name = self.lastname_input.text()
         first_name = self.firstname_input.text()
-        version_type = self.version_type_combo.currentText()
+        
+        # Get pipeline stage and status - this is the most important change
+        pipeline_stage = self.pipeline_stage_combo.currentText().lower()
+        version_status = self.version_status_combo.currentText()
+        
+        # Combine stage and status for the version type
+        version_type = f"{pipeline_stage}_{version_status}"
+        
         version_num = str(self.version_number_spinbox.value()).zfill(2)
         
         if not last_name or not first_name:
             QMessageBox.warning(self, "Missing Information", 
-                               "Please enter both Last Name and First Name")
+                            "Please enter both Last Name and First Name")
             return
         
-        # Format: X##_LastName_FirstName_wip_## (where X is the assignment letter)
+        # Format: X##_LastName_FirstName_stage_status_## (where X is the assignment letter)
         new_filename = f"{assignment_letter}{assignment_num}_{last_name}_{first_name}_{version_type}_{version_num}"
         
         # Update the filename input
@@ -1549,7 +1590,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         self.assignment_spinbox.setValue(1)
         self.lastname_input.setText("")
         self.firstname_input.setText("")
-        self.version_type_combo.setCurrentIndex(0)
+        
+        # Reset pipeline stage and status
+        self.pipeline_stage_combo.setCurrentIndex(2)  # Default to Blocking
+        self.version_status_combo.setCurrentIndex(0)  # Default to WIP
+        
         self.version_number_spinbox.setValue(1)
         
         # Update preview
@@ -1831,7 +1876,13 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             cmds.optionVar(iv=(self.OPT_VAR_ASSIGNMENT_NUMBER, self.assignment_spinbox.value()))
             cmds.optionVar(sv=(self.OPT_VAR_LAST_NAME, self.lastname_input.text()))
             cmds.optionVar(sv=(self.OPT_VAR_FIRST_NAME, self.firstname_input.text()))
-            cmds.optionVar(sv=(self.OPT_VAR_VERSION_TYPE, self.version_type_combo.currentText()))
+            
+            # Save pipeline stage
+            cmds.optionVar(sv=(self.OPT_VAR_PIPELINE_STAGE, self.pipeline_stage_combo.currentText()))
+            
+            # Save version status
+            cmds.optionVar(sv=(self.OPT_VAR_VERSION_TYPE, self.version_status_combo.currentText()))
+            
             cmds.optionVar(iv=(self.OPT_VAR_VERSION_NUMBER, self.version_number_spinbox.value()))
         except Exception as e:
             savePlus_core.debug_print(f"Error saving name generator settings: {e}")
