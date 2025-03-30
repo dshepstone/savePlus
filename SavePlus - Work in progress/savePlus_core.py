@@ -19,6 +19,12 @@ def debug_print(message):
     if DEBUG_MODE:
         print(f"[SavePlus Debug] {message}")
 
+def normalize_path(path):
+    """Normalize file paths to use consistent forward slashes."""
+    if path:
+        return path.replace('\\', '/')
+    return path
+
 class VersionHistoryModel:
     """Class to manage version history data"""
     
@@ -166,6 +172,10 @@ def save_plus_proc(file_path=None):
     """Core function that implements the SavePlus functionality"""
     print("=== MODIFIED SavePlus Process Started (Version 2.0) ===")
     
+    # Normalize the input path
+    if file_path:
+        file_path = normalize_path(file_path)
+    
     # Log current Maya scene information
     current_scene = cmds.file(query=True, sceneName=True)
     print(f"Current scene: {current_scene or 'Unsaved scene'}")
@@ -196,6 +206,7 @@ def save_plus_proc(file_path=None):
                 return False, f"Error: Could not create scenes directory: {e}", ""
         
         file_path = os.path.join(scenes_dir, file_path)
+        file_path = normalize_path(file_path)
         print(f"Using workspace scenes directory: {file_path}")
     
     # Split path and filename
@@ -400,6 +411,7 @@ def save_plus_proc(file_path=None):
     # Create the new filename
     new_file_name = new_base_name + ext
     new_file_path = os.path.join(directory, new_file_name)
+    new_file_path = normalize_path(new_file_path)
     print(f"DEBUG: Raw new_file_path: {repr(new_file_path)}")
     print(f"New file path: {new_file_path}")
     
@@ -438,7 +450,8 @@ def save_plus_proc(file_path=None):
             # Create the complete filename with extension
             attempt_filename = attempt_version + ext
             attempt_filepath = os.path.join(directory, attempt_filename)
-            
+            attempt_filepath = normalize_path(attempt_filepath)
+                        
             print(f"DEBUG: Attempt {attempt} - Trying {attempt_filepath}")
             
             # Check if this version is available
