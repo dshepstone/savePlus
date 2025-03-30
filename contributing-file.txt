@@ -1,0 +1,87 @@
+# Contributing to SavePlus
+
+Thank you for your interest in contributing to SavePlus! This document provides guidelines and instructions for contributing to the project.
+
+## Code of Conduct
+
+By participating in this project, you agree to maintain a respectful and inclusive environment for everyone.
+
+## How to Contribute
+
+There are many ways to contribute to SavePlus:
+
+1. **Reporting Bugs**: Submit detailed bug reports through GitHub Issues
+2. **Suggesting Enhancements**: Propose new features or improvements
+3. **Code Contributions**: Submit pull requests with bug fixes or new features
+4. **Documentation**: Improve or expand the documentation
+5. **Testing**: Test the tool in different environments and report findings
+
+## Reporting Issues
+
+When reporting issues, please include:
+
+- A clear, descriptive title
+- A detailed description of the issue
+- Steps to reproduce the problem
+- Expected behavior vs. actual behavior
+- Your environment (Maya version, OS, etc.)
+- Screenshots if applicable
+
+## Pull Request Process
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add appropriate tests for your changes
+5. Update the documentation to reflect your changes
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+## Coding Standards
+
+When contributing code, please follow these standards:
+
+- Follow PEP 8 style guidelines for Python code
+- Write descriptive comments for complex logic
+- Include docstrings for functions and classes
+- Maintain consistent naming conventions with existing code
+- Write meaningful commit messages
+
+## Development Setup
+
+To set up a development environment:
+
+1. Clone the repository
+2. Set up a virtual environment (optional but recommended)
+3. Install development dependencies
+4. Make your changes
+5. Test your changes both with automated tests and manual testing in Maya
+
+## UI Development Guidelines
+
+When contributing to the UI components:
+
+- Maintain consistency with existing UI elements
+- Follow the SavePlus style guide for colors, spacing, and typography
+- Ensure new UI elements are responsive and accessible
+- Test UI changes in different resolutions
+
+## Documentation
+
+When updating documentation:
+
+- Follow the existing structure and style
+- Use clear, concise language
+- Include examples where appropriate
+- Check links and references
+
+## Attribution
+
+SavePlus builds upon the foundation of Neal Singleton's original MEL script and incorporates design patterns from Chris Zurbrigg's Python tools and courses. When adding new features or making significant changes, please respect this lineage and maintain appropriate attribution in the code and documentation.
+
+## Questions?
+
+If you have questions about contributing, please open an issue on GitHub or contact the maintainers directly.
+
+Thank you for helping improve SavePlus!

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SavePlus - Download</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #3498db;
+            --accent-color: #f39c12;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --text-color: #444;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo-version {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+            background-color: rgba(41, 128, 185, 0.05);
+        }
+
+        nav ul li a.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* Page Title */
+        .page-title {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .page-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-title p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Download Section */
+        .download-section {
+            padding: 4rem 0;
+        }
+
+        .download-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .download-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .download-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+        }
+
+        .download-card-icon {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .download-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .download-card p {
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: var(--transition);
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #2471a3;
+        }
+
+        .btn-secondary {
+            background-color: #7f8c8d;
+        }
+
+        .btn-secondary:hover {
+            background-color: #6c7a7d;
+        }
+
+        .version-info {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        /* Installation Guide */
+        .installation-guide {
+            background-color: #f8f9fa;
+            padding: 4rem 0;
+        }
+
+        .guide-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+        }
+
+        .guide-container h2 {
+            margin-bottom: 2rem;
+            color: var(--dark-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .guide-container h3 {
+            margin: 1.5rem 0 1rem;
+            color: var(--primary-color);
+        }
+
+        .guide-container ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .guide-container li {
+            margin-bottom: 0.75rem;
+        }
+
+        .guide-container code {
+            background-color: #f5f5f5;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .guide-container pre {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .note {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        .tip {
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        .warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        /* Requirements */
+        .requirements {
+            padding: 4rem 0;
+        }
+
+        .requirements-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+        }
+
+        .requirements-container h2 {
+            margin-bottom: 2rem;
+            color: var(--dark-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .requirements-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .requirement-card {
+            flex: 1;
+            min-width: 250px;
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .requirement-card h3 {
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+
+        .requirement-card ul {
+            margin-left: 1.5rem;
+        }
+
+        .requirement-card li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .footer-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .footer-links h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links ul li a {
+            color: #ddd;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--accent-color);
+        }
+
+        .copyright {
+            margin-top: 2rem;
+            text-align: center;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            nav ul {
+                margin-top: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 0.5rem;
+            }
+
+            .download-container {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="navbar">
+                <a href="index.html" class="logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 32px; color: #2980b9;"></i>
+                    </div>
+                    <div>
+                        <span class="logo-text">SavePlus</span>
+                        <span class="logo-version">v1.2.0</span>
+                    </div>
+                </a>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html" class="active">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title -->
+    <section class="page-title">
+        <div class="container">
+            <h1>Download SavePlus</h1>
+            <p>Get the latest version of SavePlus and supercharge your Maya file management workflow</p>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="download-section">
+        <div class="container">
+            <div class="download-container">
+                <div class="download-card">
+                    <div class="download-card-icon">
+                        <i class="fas fa-download"></i>
+                    </div>
+                    <h3>SavePlus Latest Release</h3>
+                    <p>Get the latest stable version of SavePlus for Maya 2025, complete with all features and documentation.</p>
+                    <div class="version-info">
+                        <strong>Version:</strong> 1.2.0 | <strong>Released:</strong> March 15, 2025
+                    </div>
+                    <a href="https://github.com/yourusername/saveplus/releases/latest/download/SavePlus_v1.2.0.zip" class="btn">
+                        <i class="fas fa-download"></i> Download v1.2.0
+                    </a>
+                </div>
+                <div class="download-card">
+                    <div class="download-card-icon">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <h3>Development Version</h3>
+                    <p>Access the latest development version with cutting-edge features. May contain experimental functionality.</p>
+                    <div class="version-info">
+                        <strong>Version:</strong> 1.3.0-dev | <strong>Updated:</strong> Daily
+                    </div>
+                    <a href="https://github.com/yourusername/saveplus" class="btn btn-secondary">
+                        <i class="fab fa-github"></i> GitHub Repository
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation Guide -->
+    <section class="installation-guide">
+        <div class="container">
+            <div class="guide-container">
+                <h2>Quick Installation Guide</h2>
+                <p>Follow these steps to get SavePlus up and running in your Maya environment:</p>
+                
+                <h3>Automatic Installation</h3>
+                <ol>
+                    <li>Download the SavePlus ZIP package</li>
+                    <li>Extract the contents to a temporary location</li>
+                    <li>Launch Maya 2025</li>
+                    <li>Drag and drop the <code>install_saveplus.py</code> file into Maya's viewport</li>
+                    <li>The installer will automatically copy the files and create a shelf button</li>
+                    <li>Click the SavePlus button on your shelf to launch the tool</li>
+                </ol>
+                
+                <div class="tip">
+                    <p><strong>Tip:</strong> The automatic installer takes care of placing files in the correct locations and setting up the shelf button, making it the recommended installation method for most users.</p>
+                </div>
+                
+                <h3>Manual Installation</h3>
+                <ol>
+                    <li>Download the SavePlus ZIP package</li>
+                    <li>Extract the following files:
+                        <ul>
+                            <li><code>__init__.py</code></li>
+                            <li><code>savePlus_core.py</code></li>
+                            <li><code>savePlus_ui_components.py</code></li>
+                            <li><code>savePlus_main.py</code></li>
+                            <li><code>savePlus_launcher.py</code></li>
+                        </ul>
+                    </li>
+                    <li>Copy these files to your Maya scripts directory:
+                        <ul>
+                            <li>Windows: <code>C:/Users/[username]/Documents/maya/scripts</code></li>
+                            <li>macOS: <code>/Users/[username]/Library/Preferences/Autodesk/maya/scripts</code></li>
+                            <li>Linux: <code>/home/[username]/maya/scripts</code></li>
+                        </ul>
+                    </li>
+                    <li>Launch Maya and run the following Python code in the Script Editor to create a shelf button:
+                        <pre>import savePlus_launcher
+savePlus_launcher.install_shelf_button()</pre>
+                    </li>
+                </ol>
+                
+                <div class="note">
+                    <p><strong>Note:</strong> After installation, you can launch SavePlus by clicking the shelf button or by running <code>import savePlus_launcher; savePlus_launcher.launch_save_plus()</code> in Maya's Script Editor.</p>
+                </div>
+                
+                <h3>Creating a Custom Hotkey</h3>
+                <p>For quick access, you can set up a custom hotkey in Maya:</p>
+                <ol>
+                    <li>Go to <strong>Windows</strong> > <strong>Settings/Preferences</strong> > <strong>Hotkey Editor</strong></li>
+                    <li>Click <strong>New</strong> to create a new hotkey</li>
+                    <li>In the <strong>Command</strong> field, enter:
+                        <pre>import savePlus_launcher; savePlus_launcher.launch_save_plus()</pre>
+                    </li>
+                    <li>Assign your preferred key combination</li>
+                    <li>Click <strong>OK</strong> to save</li>
+                </ol>
+                
+                <div class="warning">
+                    <p><strong>Important:</strong> If you already have custom scripts that use the standard Maya save keyboard shortcuts (Ctrl+S or Cmd+S), you may need to modify those scripts to avoid conflicts with SavePlus.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Requirements -->
+    <section class="requirements">
+        <div class="container">
+            <div class="requirements-container">
+                <h2>System Requirements</h2>
+                <div class="requirements-list">
+                    <div class="requirement-card">
+                        <h3>Software</h3>
+                        <ul>
+                            <li>Maya 2025</li>
+                            <li>PySide6 (included with Maya 2025)</li>
+                        </ul>
+                    </div>
+                    <div class="requirement-card">
+                        <h3>Operating Systems</h3>
+                        <ul>
+                            <li>Windows 10/11</li>
+                            <li>macOS 12 (Monterey) or later</li>
+                            <li>Linux (CentOS/Rocky Linux 8.6 or compatible)</li>
+                        </ul>
+                    </div>
+                    <div class="requirement-card">
+                        <h3>Recommended</h3>
+                        <ul>
+                            <li>8 GB RAM or more</li>
+                            <li>Multi-core processor</li>
+                            <li>50 MB free disk space for installation</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="note" style="margin-top: 2rem;">
+                    <p><strong>Version Compatibility:</strong> While SavePlus is primarily designed for Maya 2025, it may work with Maya 2023 and 2024, but some features might have limited functionality. For older Maya versions, please check the <a href="https://github.com/yourusername/saveplus/releases">releases page</a> for legacy versions of SavePlus.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 24px; color: white;"></i>
+                    </div>
+                    <span class="footer-logo-text">SavePlus</span>
+                </div>
+                <div class="footer-links">
+                    <h3>Navigate</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="documentation.html#installation">Installation Guide</a></li>
+                        <li><a href="documentation.html#faq">FAQ</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/issues" target="_blank">Report Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Contact</h3>
+                    <ul>
+                        <li><a href="mailto:contact@example.com">Email Support</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">Community Forum</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>SavePlus &copy; 2025. Original MEL script by Neal Singleton, Python port by SavePlus Team.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

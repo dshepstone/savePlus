@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SavePlus - Features</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #3498db;
+            --accent-color: #f39c12;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --text-color: #444;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo-version {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+            background-color: rgba(41, 128, 185, 0.05);
+        }
+
+        nav ul li a.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* Page Title */
+        .page-title {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .page-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-title p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Feature Sections */
+        .feature-section {
+            padding: 5rem 0;
+        }
+
+        .feature-section:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .feature-container {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+        }
+
+        .feature-container.reverse {
+            flex-direction: row-reverse;
+        }
+
+        .feature-image {
+            flex: 1;
+            text-align: center;
+        }
+
+        .feature-image img {
+            max-width: 100%;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .feature-content {
+            flex: 1;
+        }
+
+        .feature-content h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .feature-content p {
+            margin-bottom: 1.5rem;
+            color: #666;
+        }
+
+        .feature-content ul {
+            margin-bottom: 1.5rem;
+            padding-left: 1.5rem;
+        }
+
+        .feature-content li {
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .feature-content li strong {
+            color: var(--dark-color);
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #2471a3;
+        }
+
+        /* Detailed Feature Blocks */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+            transition: var(--transition);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .feature-card-image {
+            height: 200px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .feature-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .feature-card:hover .feature-card-image img {
+            transform: scale(1.05);
+        }
+
+        .feature-card-content {
+            padding: 1.5rem;
+        }
+
+        .feature-card-content h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .feature-card-content p {
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon {
+            color: var(--primary-color);
+            font-size: 1.5rem;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        /* CTA Section */
+        .cta {
+            padding: 4rem 0;
+            text-align: center;
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            margin-top: 2rem;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta p {
+            margin-bottom: 2rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Additional Styles */
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            color: #666;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .highlight-box {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        .highlight-box h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            background-color: #e0e0e0;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -3px;
+            border-radius: 3px;
+        }
+
+        .timeline-item {
+            padding: 10px 40px;
+            position: relative;
+            width: 50%;
+            box-sizing: border-box;
+        }
+
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            right: -13px;
+            background-color: white;
+            border: 4px solid var(--primary-color);
+            top: 15px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .timeline-item.left {
+            left: 0;
+        }
+
+        .timeline-item.right {
+            left: 50%;
+        }
+
+        .timeline-item.right::after {
+            left: -13px;
+        }
+
+        .timeline-content {
+            padding: 20px;
+            background-color: white;
+            position: relative;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .timeline-content h3 {
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .footer-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .footer-links h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links ul li a {
+            color: #ddd;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--accent-color);
+        }
+
+        .copyright {
+            margin-top: 2rem;
+            text-align: center;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .feature-container, 
+            .feature-container.reverse {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .timeline::after {
+                left: 31px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                padding-left: 70px;
+                padding-right: 25px;
+            }
+
+            .timeline-item.right {
+                left: 0;
+            }
+
+            .timeline-item.left::after,
+            .timeline-item.right::after {
+                left: 18px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            nav ul {
+                margin-top: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 0.5rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="navbar">
+                <a href="index.html" class="logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 32px; color: #2980b9;"></i>
+                    </div>
+                    <div>
+                        <span class="logo-text">SavePlus</span>
+                        <span class="logo-version">v1.2.0</span>
+                    </div>
+                </a>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html" class="active">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title -->
+    <section class="page-title">
+        <div class="container">
+            <h1>SavePlus Features</h1>
+            <p>Discover how SavePlus enhances your Maya workflow with intelligent versioning and file management tools</p>
+        </div>
+    </section>
+
+    <!-- Intelligent Versioning Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="feature-container">
+                <div class="feature-image">
+                    <img src="/api/placeholder/500/350" alt="Intelligent versioning in action" />
+                </div>
+                <div class="feature-content">
+                    <h2>Intelligent Versioning</h2>
+                    <p>SavePlus goes beyond simple incrementing by intelligently analyzing your filenames to preserve naming patterns while updating version numbers.</p>
+                    
+                    <ul>
+                        <li><strong>Pattern Recognition:</strong> Automatically identifies version numbers in various formats and positions</li>
+                        <li><strong>Preserves Project Identifiers:</strong> Maintains important project codes, artist names, and other identifiers</li>
+                        <li><strong>Handles Complex Naming:</strong> Works with studio-specific naming conventions and pipeline requirements</li>
+                        <li><strong>Version Preview:</strong> Shows you what your next filename will be before saving</li>
+                    </ul>
+                    
+                    <div class="highlight-box">
+                        <h3>Examples of Intelligent Versioning</h3>
+                        <ul>
+                            <li>character.ma → character02.ma</li>
+                            <li>character5.ma → character6.ma</li>
+                            <li>character_v001.ma → character_v002.ma</li>
+                            <li>J02_Smith_John_blocking_wip_01.ma → J02_Smith_John_blocking_wip_02.ma</li>
+                            <li>scene45_99.ma → scene45_100.ma</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="documentation.html#save-plus" class="btn">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Version History Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="feature-container reverse">
+                <div class="feature-image">
+                    <img src="/api/placeholder/500/350" alt="Version history tracking" />
+                </div>
+                <div class="feature-content">
+                    <h2>Comprehensive Version Tracking</h2>
+                    <p>Keep a complete record of your file history with SavePlus's robust version tracking system.</p>
+                    
+                    <ul>
+                        <li><strong>Version Notes:</strong> Document changes with each save to maintain a detailed work log</li>
+                        <li><strong>Quick Notes:</strong> Rapidly add context without interrupting your workflow</li>
+                        <li><strong>File Groups:</strong> Automatically organizes related files together</li>
+                        <li><strong>Recent Files List:</strong> Quickly access your most recent work across all projects</li>
+                        <li><strong>Exportable History:</strong> Generate documentation of your version history</li>
+                    </ul>
+                    
+                    <p>Version history is maintained across Maya sessions and provides a searchable record of your work evolution, making it easy to track changes, revert to previous states, or document project progress.</p>
+                    
+                    <a href="documentation.html#version-history" class="btn">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Name Generator Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="feature-container">
+                <div class="feature-image">
+                    <img src="/api/placeholder/500/350" alt="Name Generator interface" />
+                </div>
+                <div class="feature-content">
+                    <h2>Advanced Name Generator</h2>
+                    <p>Maintain consistent file naming across projects and teams with the built-in name generator that follows studio conventions.</p>
+                    
+                    <ul>
+                        <li><strong>Structured Templates:</strong> Generate standardized filenames based on established patterns</li>
+                        <li><strong>Pipeline Integration:</strong> Select from predefined pipeline stages to maintain workflow standards</li>
+                        <li><strong>Artist Attribution:</strong> Include artist information for clear ownership</li>
+                        <li><strong>Project Identifiers:</strong> Maintain assignment or job codes for organizational clarity</li>
+                    </ul>
+                    
+                    <p>The Name Generator is particularly valuable in team environments where consistent naming is critical for pipeline integration and project management.</p>
+                    
+                    <div class="highlight-box">
+                        <h3>Pipeline Stages</h3>
+                        <p>Choose from standardized animation pipeline stages:</p>
+                        <ul>
+                            <li>Layout</li>
+                            <li>Planning</li>
+                            <li>Blocking</li>
+                            <li>Blocking Plus</li>
+                            <li>Spline</li>
+                            <li>Polish</li>
+                            <li>Lighting</li>
+                            <li>Final</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="documentation.html#name-generator" class="btn">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Safety Features Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Safety Features</h2>
+                <p>SavePlus includes multiple layers of protection to prevent work loss and maintain file integrity</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-card-image">
+                        <img src="/api/placeholder/400/200" alt="Save reminders feature" />
+                    </div>
+                    <div class="feature-card-content">
+                        <h3><i class="feature-icon fas fa-bell"></i>Save Reminders</h3>
+                        <p>Never forget to save again with customizable reminders that alert you when it's time to save your work.</p>
+                        <ul>
+                            <li>Configurable time intervals</li>
+                            <li>Visual indicator changes color as time passes</li>
+                            <li>Non-intrusive notification system</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-card-image">
+                        <img src="/api/placeholder/400/200" alt="Automatic backups feature" />
+                    </div>
+                    <div class="feature-card-content">
+                        <h3><i class="feature-icon fas fa-shield-alt"></i>Automatic Backups</h3>
+                        <p>Create timestamped backup copies of your work to provide recovery options and prevent data loss.</p>
+                        <ul>
+                            <li>Scheduled automatic backups</li>
+                            <li>Manual backup creation</li>
+                            <li>Intelligent backup naming</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-card-image">
+                        <img src="/api/placeholder/400/200" alt="Conflict resolution feature" />
+                    </div>
+                    <div class="feature-card-content">
+                        <h3><i class="feature-icon fas fa-exclamation-triangle"></i>Conflict Resolution</h3>
+                        <p>Smart handling of file conflicts to prevent accidental overwrites and data loss.</p>
+                        <ul>
+                            <li>Proactive conflict detection</li>
+                            <li>Multiple resolution options</li>
+                            <li>Automatic unique naming</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Workflow Integration Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Workflow Integration</h2>
+                <p>SavePlus seamlessly integrates with your existing Maya workflow and pipeline</p>
+            </div>
+            
+            <div class="timeline">
+                <div class="timeline-item left">
+                    <div class="timeline-content">
+                        <h3>Quick Access</h3>
+                        <p>Launch SavePlus instantly with the shelf button or keyboard shortcuts:</p>
+                        <ul>
+                            <li>Ctrl+S: Save Plus (increment save)</li>
+                            <li>Ctrl+Shift+S: Save As New</li>
+                            <li>Ctrl+B: Create Backup</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="timeline-item right">
+                    <div class="timeline-content">
+                        <h3>Reference Path Integration</h3>
+                        <p>Extract paths from referenced files to maintain organizational structure and ensure animation files are saved alongside their reference assets.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item left">
+                    <div class="timeline-content">
+                        <h3>Project Directory Support</h3>
+                        <p>Full compatibility with Maya's project structure, ensuring files are saved in the correct locations within your project hierarchy.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item right">
+                    <div class="timeline-content">
+                        <h3>Custom Save Locations</h3>
+                        <p>Configure default save paths or browse to specific locations, with visual indicators showing the current save destination.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item left">
+                    <div class="timeline-content">
+                        <h3>File Type Selection</h3>
+                        <p>Easily toggle between Maya ASCII (.ma) and Maya Binary (.mb) formats based on project requirements.</p>
+                    </div>
+                </div>
+                
+                <div class="timeline-item right">
+                    <div class="timeline-content">
+                        <h3>Customizable Interface</h3>
+                        <p>Configure which sections are expanded or collapsed by default for a streamlined experience that matches your workflow needs.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Customization Section -->
+    <section class="feature-section">
+        <div class="container">
+            <div class="feature-container reverse">
+                <div class="feature-image">
+                    <img src="/api/placeholder/500/350" alt="Preferences panel" />
+                </div>
+                <div class="feature-content">
+                    <h2>Extensive Customization</h2>
+                    <p>Tailor SavePlus to match your specific workflow and preferences.</p>
+                    
+                    <ul>
+                        <li><strong>Default Settings:</strong> Configure default file types, save locations, and project directories</li>
+                        <li><strong>UI Preferences:</strong> Control which sections are expanded by default</li>
+                        <li><strong>Reminder Intervals:</strong> Set the frequency of save reminders</li>
+                        <li><strong>Backup Configuration:</strong> Enable automated backups and set intervals</li>
+                        <li><strong>Version Notes:</strong> Toggle version notes for rapid or detailed documentation</li>
+                    </ul>
+                    
+                    <p>All preferences are stored per user and persist between Maya sessions, ensuring a consistent experience tailored to your needs.</p>
+                    
+                    <a href="documentation.html#preferences" class="btn">Learn More</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta">
+        <div class="container">
+            <h2>Ready to Enhance Your Maya Workflow?</h2>
+            <p>Experience the full power of SavePlus and never worry about file versioning again.</p>
+            <a href="download.html" class="btn"><i class="fas fa-download"></i> Download SavePlus Now</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 24px; color: white;"></i>
+                    </div>
+                    <span class="footer-logo-text">SavePlus</span>
+                </div>
+                <div class="footer-links">
+                    <h3>Navigate</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="documentation.html#installation">Installation Guide</a></li>
+                        <li><a href="documentation.html#faq">FAQ</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/issues" target="_blank">Report Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Contact</h3>
+                    <ul>
+                        <li><a href="mailto:contact@example.com">Email Support</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">Community Forum</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>SavePlus &copy; 2025. Original MEL script by Neal Singleton, Python port by SavePlus Team.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

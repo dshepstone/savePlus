@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SavePlus - Changelog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #3498db;
+            --accent-color: #f39c12;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --text-color: #444;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo-version {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+            background-color: rgba(41, 128, 185, 0.05);
+        }
+
+        nav ul li a.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* Page Title */
+        .page-title {
+            background: linear-gradient(135deg, #3498db 0%, #2c3e50 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .page-title h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-title p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Changelog Section */
+        .changelog-section {
+            padding: 4rem 0;
+        }
+
+        .changelog-container {
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+        }
+
+        .changelog-container h2 {
+            margin-bottom: 2rem;
+            color: var(--dark-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .version-entry {
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .version-entry:last-child {
+            margin-bottom: 0;
+        }
+
+        .version-entry::before {
+            content: '';
+            position: absolute;
+            top: 2.5rem;
+            bottom: -1.5rem;
+            left: 1.05rem;
+            width: 3px;
+            background-color: #eee;
+            z-index: 0;
+        }
+
+        .version-entry:last-child::before {
+            display: none;
+        }
+
+        .version-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .version-dot {
+            width: 2.25rem;
+            height: 2.25rem;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .version-dot.latest {
+            background-color: var(--success-color);
+        }
+
+        .version-info {
+            flex: 1;
+        }
+
+        .version-title {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .version-title h3 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            margin-right: 0.5rem;
+        }
+
+        .version-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            border-radius: 1rem;
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .version-badge.major {
+            background-color: var(--danger-color);
+        }
+
+        .version-badge.minor {
+            background-color: var(--primary-color);
+        }
+
+        .version-badge.patch {
+            background-color: var(--success-color);
+        }
+
+        .version-badge.latest {
+            background-color: var(--accent-color);
+        }
+
+        .version-meta {
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+
+        .version-content {
+            padding-left: 3.25rem;
+        }
+
+        .change-category {
+            margin-bottom: 1.5rem;
+        }
+
+        .change-category:last-child {
+            margin-bottom: 0;
+        }
+
+        .change-category h4 {
+            font-size: 1.1rem;
+            color: var(--dark-color);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .change-category h4 i {
+            width: 1.5rem;
+            margin-right: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .change-category ul {
+            margin-left: 2rem;
+        }
+
+        .change-category li {
+            margin-bottom: 0.5rem;
+        }
+
+        .change-category li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .highlight {
+            background-color: rgba(52, 152, 219, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--primary-color);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .footer-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .footer-links h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links ul li a {
+            color: #ddd;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--accent-color);
+        }
+
+        .copyright {
+            margin-top: 2rem;
+            text-align: center;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            nav ul {
+                margin-top: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 0.5rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="navbar">
+                <a href="index.html" class="logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 32px; color: #2980b9;"></i>
+                    </div>
+                    <div>
+                        <span class="logo-text">SavePlus</span>
+                        <span class="logo-version">v1.2.0</span>
+                    </div>
+                </a>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html" class="active">Changelog</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Page Title -->
+    <section class="page-title">
+        <div class="container">
+            <h1>Changelog</h1>
+            <p>Stay up-to-date with SavePlus development and see what's new in each version</p>
+        </div>
+    </section>
+
+    <!-- Changelog Section -->
+    <section class="changelog-section">
+        <div class="container">
+            <div class="changelog-container">
+                <h2>Version History</h2>
+                
+                <!-- Version 1.2.0 -->
+                <div class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot latest">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Version 1.2.0</h3>
+                                <span class="version-badge minor">Minor Release</span>
+                                <span class="version-badge latest">Latest</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: March 15, 2025</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a href="https://github.com/yourusername/saveplus/releases/tag/v1.2.0" target="_blank">GitHub Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-plus-circle"></i> New Features</h4>
+                            <ul>
+                                <li>Added customizable pipeline stages in Name Generator for improved workflow integration</li>
+                                <li>Implemented Version Notes system to document changes with each save</li>
+                                <li>Added Quick Note feature for faster documentation</li>
+                                <li>Added ability to extract paths from referenced files with the new Reference Path button</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-wrench"></i> Improvements</h4>
+                            <ul>
+                                <li>Enhanced version history tracking with more detailed metadata</li>
+                                <li>Improved filename pattern recognition for more accurate versioning</li>
+                                <li>Optimized save reminder system with visual status indicators</li>
+                                <li>Updated file conflict handling with more user-friendly options</li>
+                                <li>Enhanced UI with clearer section organization and visual hints</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-bug"></i> Bug Fixes</h4>
+                            <ul>
+                                <li>Fixed issue with timer not properly initializing in some Maya sessions</li>
+                                <li>Resolved path normalization for cross-platform compatibility</li>
+                                <li>Fixed rare crash when creating backups with certain file naming patterns</li>
+                                <li>Corrected handling of special characters in filenames</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Version 1.1.0 -->
+                <div class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot">
+                            <i class="fas fa-code-branch"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Version 1.1.0</h3>
+                                <span class="version-badge minor">Minor Release</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: January 20, 2025</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a href="https://github.com/yourusername/saveplus/releases/tag/v1.1.0" target="_blank">GitHub Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-plus-circle"></i> New Features</h4>
+                            <ul>
+                                <li>Added automatic backup system with configurable intervals</li>
+                                <li>Implemented save reminder system to prevent work loss</li>
+                                <li>Added export functionality for version history</li>
+                                <li>Introduced file path preview and truncation for better visibility</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-wrench"></i> Improvements</h4>
+                            <ul>
+                                <li>Enhanced UI with collapsible sections for cleaner interface</li>
+                                <li>Improved Name Generator with more flexible options</li>
+                                <li>Enhanced pattern recognition for project identifier formats</li>
+                                <li>Added tooltips throughout the interface for better usability</li>
+                                <li>Increased max history entries from 30 to 50 per file group</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-bug"></i> Bug Fixes</h4>
+                            <ul>
+                                <li>Fixed issue with backslash handling in filenames</li>
+                                <li>Resolved memory leak in history tracking</li>
+                                <li>Fixed UI scaling issues on high-DPI displays</li>
+                                <li>Corrected path handling for network drives</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Version 1.0.0 -->
+                <div class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Version 1.0.0</h3>
+                                <span class="version-badge major">Major Release</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: November 5, 2024</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a href="https://github.com/yourusername/saveplus/releases/tag/v1.0.0" target="_blank">GitHub Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-plus-circle"></i> Initial Release</h4>
+                            <ul>
+                                <li>First public release of SavePlus for Maya 2025</li>
+                                <li>Complete Python port of original MEL script by Neal Singleton</li>
+                                <li>Modern PySide6-based user interface</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-list"></i> Core Features</h4>
+                            <ul>
+                                <li>Intelligent versioning with pattern recognition</li>
+                                <li>Save As New functionality</li>
+                                <li>Basic version history tracking</li>
+                                <li>Name Generator for standardized filenames</li>
+                                <li>File type selection (Maya ASCII/Binary)</li>
+                                <li>Recent files list</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Version 0.9.0 Beta -->
+                <div class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Version 0.9.0</h3>
+                                <span class="version-badge" style="background-color: #7f8c8d;">Beta</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: September 15, 2024</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a href="https://github.com/yourusername/saveplus/releases/tag/v0.9.0-beta" target="_blank">GitHub Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-info-circle"></i> About This Release</h4>
+                            <ul>
+                                <li>Beta release for testing and feedback</li>
+                                <li>Limited to select beta testers</li>
+                                <li>First complete implementation of the UI and core functionality</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-exclamation-triangle"></i> Known Issues</h4>
+                            <ul>
+                                <li>Performance issues with large history lists</li>
+                                <li>UI scaling problems on certain displays</li>
+                                <li>Incomplete cross-platform compatibility</li>
+                                <li>Limited error handling</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Legacy Info -->
+                <div class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Original MEL Script</h3>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Created: 2015-2023</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-info-circle"></i> About</h4>
+                            <p>SavePlus was originally developed as a MEL script by Neal Singleton. The original script provided basic versioning functionality but lacked the advanced features and user interface of the current Python implementation.</p>
+                            <p>In 2024, the SavePlus Team began the process of porting the tool to Python and expanding its capabilities for Maya 2025, resulting in the current SavePlus tool.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 24px; color: white;"></i>
+                    </div>
+                    <span class="footer-logo-text">SavePlus</span>
+                </div>
+                <div class="footer-links">
+                    <h3>Navigate</h3>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Resources</h3>
+                    <ul>
+                        <li><a href="documentation.html#installation">Installation Guide</a></li>
+                        <li><a href="documentation.html#faq">FAQ</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/issues" target="_blank">Report Issues</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h3>Contact</h3>
+                    <ul>
+                        <li><a href="mailto:contact@example.com">Email Support</a></li>
+                        <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">Community Forum</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>SavePlus &copy; 2025. Original MEL script by Neal Singleton, Python port by SavePlus Team.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
