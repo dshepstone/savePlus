@@ -530,8 +530,26 @@ def create_backup(current_file=None):
         # Save current file first
         cmds.file(save=True)
         
-        # Use Maya's file command to make a copy
-        cmds.file(current_file, copyAs=backup_path)
+        # Use Maya's correct syntax for file copying
+        if backup_path.lower().endswith('.ma'):
+            cmds.file(current_file, o=True, force=True)
+            cmds.file(rename=backup_path)
+            cmds.file(save=True, type="mayaAscii")
+            # Reopen the original file to return to previous state
+            cmds.file(current_file, o=True, force=True)
+        elif backup_path.lower().endswith('.mb'):
+            cmds.file(current_file, o=True, force=True)
+            cmds.file(rename=backup_path)
+            cmds.file(save=True, type="mayaBinary")
+            # Reopen the original file to return to previous state
+            cmds.file(current_file, o=True, force=True)
+        else:
+            # Default to Maya ASCII
+            cmds.file(current_file, o=True, force=True)
+            cmds.file(rename=backup_path)
+            cmds.file(save=True, type="mayaAscii")
+            # Reopen the original file to return to previous state
+            cmds.file(current_file, o=True, force=True)
         
         message = f"Backup saved as: {backup_filename}"
         print(message)
