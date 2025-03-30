@@ -14,6 +14,7 @@ To use:
 import os
 import sys
 import traceback
+import shutil
 from maya import cmds
 from maya import mel  # Import mel here for shelf button installation
 
@@ -106,6 +107,60 @@ def launch_save_plus():
         )
         return None
 
+def quick_install():
+    """
+    Quick install function for SavePlus.
+    Copies files to Maya scripts directory and creates a shelf button.
+    
+    Returns:
+        bool: True if installation was successful, False otherwise
+    """
+    try:
+        # Get Maya scripts directory
+        maya_script_dir = cmds.internalVar(userScriptDir=True)
+        
+        # Get the directory of this script
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Files to copy to scripts directory
+        files_to_copy = [
+            "__init__.py",
+            "savePlus_core.py",
+            "savePlus_ui_components.py",
+            "savePlus_main.py",
+            "savePlus_launcher.py"
+        ]
+        
+        # Copy files
+        for file_name in files_to_copy:
+            source_file = os.path.join(current_dir, file_name)
+            dest_file = os.path.join(maya_script_dir, file_name)
+            
+            if os.path.exists(source_file):
+                # Create directory if it doesn't exist
+                if not os.path.exists(os.path.dirname(dest_file)):
+                    os.makedirs(os.path.dirname(dest_file))
+                
+                # Copy the file
+                shutil.copy2(source_file, dest_file)
+                print(f"Copied {file_name} to {maya_script_dir}")
+            else:
+                print(f"Warning: Could not find {source_file}")
+        
+        # Create shelf button
+        result = install_shelf_button()
+        
+        if result:
+            print("Shelf button created successfully")
+        else:
+            print("Failed to create shelf button")
+            
+        return True
+    except Exception as e:
+        print(f"Error during installation: {str(e)}")
+        traceback.print_exc()
+        return False
+
 # Create a shelf button installation function
 def install_shelf_button():
     """Install SavePlus buttons on the current Maya shelf"""
@@ -136,83 +191,32 @@ import savePlus_launcher
 savePlus_launcher.launch_save_plus()
 """
         
+        # Get path to custom icon if it exists
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(script_dir, "icons", "saveplus.png")
+        
+        # Use custom icon if available, otherwise use Maya's default
+        if not os.path.exists(icon_path):
+            icon_path = 'incrementalSave.png'  # Fallback to Maya's icon
+        
         # Create or update button
         if existing_button:
-            cmds.shelfButton(existing_button, edit=True, command=button_command)
-            print("Updated existing SavePlus shelf button")
+            cmds.shelfButton(existing_button, edit=True, command=button_command, image=icon_path)
+            print(f"Updated existing SavePlus shelf button with icon: {icon_path}")
         else:
             button = cmds.shelfButton(
                     label='SavePlus',
                     annotation=f'Launch SavePlus - {UNIQUE_IDENTIFIER}',
-                    image='incrementalSave.png',
+                    image=icon_path,
                     command=button_command,
                     sourceType='python',
                     parent=current_shelf)
-            print("SavePlus shelf button created")
+            print(f"SavePlus shelf button created with icon: {icon_path}")
         
         return True
     except Exception as e:
         print(f"Error installing shelf button: {e}")
         traceback.print_exc()
-        return False
-
-# Create a quick install function for all files
-def quick_install():
-    """Copy all SavePlus files to Maya's script directory"""
-    try:
-        from shutil import copy2
-        
-        # Get the scripts directory
-        scripts_dir = os.path.join(cmds.internalVar(userAppDir=True), "scripts")
-        
-        # Make sure the directory exists
-        if not os.path.exists(scripts_dir):
-            os.makedirs(scripts_dir)
-        
-        # Get this file's directory
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # Files to install
-        files_to_install = [
-            "savePlus_core.py",
-            "savePlus_ui_components.py",
-            "savePlus_main.py",
-            "savePlus_launcher.py"
-        ]
-        
-        # Copy files
-        for file_name in files_to_install:
-            source_file = os.path.join(current_dir, file_name)
-            target_file = os.path.join(scripts_dir, file_name)
-            
-            if os.path.exists(source_file):
-                copy2(source_file, target_file)
-                print(f"Installed {file_name} to {scripts_dir}")
-            else:
-                print(f"Warning: Could not find {file_name} in {current_dir}")
-        
-        # Create shelf button
-        install_shelf_button()
-        
-        # Show success message
-        cmds.confirmDialog(
-            title="SavePlus Installation", 
-            message="SavePlus has been successfully installed!\n\nA button has been added to your current shelf.", 
-            button=["OK"], 
-            defaultButton="OK"
-        )
-        
-        return True
-    except Exception as e:
-        print(f"Error during installation: {e}")
-        traceback.print_exc()
-        
-        cmds.confirmDialog(
-            title="SavePlus Installation Error", 
-            message=f"Error during installation: {str(e)}\n\nCheck script editor for details.", 
-            button=["OK"], 
-            defaultButton="OK"
-        )
         return False
 
 # Only create the UI if this script is run directly

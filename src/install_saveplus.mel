@@ -1,0 +1,56 @@
+/*
+SavePlus Installation Script for Maya 2025
+Drag and drop this file into Maya's viewport to install SavePlus.
+*/
+
+global proc savePlusInstall() {
+    // Confirm installation
+    string $result = `confirmDialog 
+        -title "SavePlus Installation" 
+        -message "Install SavePlus for Maya 2025?\n\nThis will create a shelf button for easy access." 
+        -button "Install" 
+        -button "Cancel" 
+        -defaultButton "Install" 
+        -cancelButton "Cancel" 
+        -dismissString "Cancel"`;
+    
+    if ($result == "Cancel") {
+        print("SavePlus installation cancelled.\n");
+        return;
+    }
+    
+    // Create the shelf button
+    createSavePlusShelfButton();
+    
+    // Show success message
+    confirmDialog 
+        -title "SavePlus Installation Complete" 
+        -message "SavePlus has been installed successfully!\n\nA button has been added to your current shelf." 
+        -button "OK" 
+        -defaultButton "OK";
+    
+    print("SavePlus installed successfully!\n");
+}
+
+global proc createSavePlusShelfButton() {
+    // Get the current shelf
+    global string $gShelfTopLevel;
+    string $currentShelf = `tabLayout -query -selectTab $gShelfTopLevel`;
+    
+    // Python command for the button
+    string $pythonCommand = "import savePlus_launcher\nsavePlus_launcher.launch_save_plus()";
+    
+    // Create the shelf button
+    shelfButton
+        -parent $currentShelf
+        -image "incrementalSave.png"
+        -label "SavePlus"
+        -annotation "Launch SavePlus versioning tool"
+        -command $pythonCommand
+        -sourceType "python";
+    
+    print("SavePlus button added to the " + $currentShelf + " shelf\n");
+}
+
+// Execute the installation function
+savePlusInstall();
