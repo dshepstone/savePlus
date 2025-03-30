@@ -1,3 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SavePlus - Documentation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2980b9;
+            --secondary-color: #3498db;
+            --accent-color: #f39c12;
+            --dark-color: #333;
+            --light-color: #f8f9fa;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --text-color: #444;
+            --border-radius: 4px;
+            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: #f4f7f9;
+            scroll-behavior: smooth;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background-color: white;
+            box-shadow: var(--box-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .logo img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .logo-version {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            margin-left: 5px;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 1.5rem;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: var(--dark-color);
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+            background-color: rgba(41, 128, 185, 0.05);
+        }
+
+        nav ul li a.active {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        /* Documentation Layout */
+        .documentation {
+            display: flex;
+            gap: 2rem;
+            padding: 3rem 0;
+            flex: 1;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            position: sticky;
+            top: 100px;
+            align-self: flex-start;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 1.5rem;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+            color: var(--dark-color);
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar ul li {
+            margin-bottom: 0.75rem;
+        }
+
+        .sidebar ul li a {
+            text-decoration: none;
+            color: #666;
+            transition: var(--transition);
+            display: block;
+            padding: 0.3rem 0;
+        }
+
+        .sidebar ul li a:hover {
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .sidebar ul li.section-head {
+            font-weight: 600;
+            margin-top: 1rem;
+            color: var(--dark-color);
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+        }
+
+        .content h2 {
+            margin-bottom: 1.5rem;
+            color: var(--primary-color);
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #eee;
+        }
+
+        .content h3 {
+            margin: 2rem 0 1rem;
+            color: var(--dark-color);
+        }
+
+        .content h4 {
+            margin: 1.5rem 0 0.75rem;
+            color: #444;
+        }
+
+        .content p {
+            margin-bottom: 1rem;
+        }
+
+        .content ul, .content ol {
+            margin-bottom: 1.5rem;
+            padding-left: 2rem;
+        }
+
+        .content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .content img {
+            max-width: 100%;
+            border-radius: var(--border-radius);
+            margin: 1.5rem 0;
+            box-shadow: var(--box-shadow);
+        }
+
+        .content code {
+            background-color: #f5f5f5;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .content pre {
+            background-color: #f5f5f5;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+        }
+
+        .content pre code {
+            padding: 0;
+            background-color: transparent;
+        }
+
+        .content blockquote {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border-left: 4px solid var(--primary-color);
+            background-color: #f8f9fa;
+        }
+
+        .content blockquote p:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-card {
+            background-color: #f8f9fa;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .feature-card h4 {
+            color: var(--primary-color);
+            margin-top: 0;
+        }
+
+        .note {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid var(--primary-color);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        .tip {
+            background-color: rgba(46, 204, 113, 0.1);
+            border-left: 4px solid #2ecc71;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        .warning {
+            background-color: rgba(243, 156, 18, 0.1);
+            border-left: 4px solid var(--accent-color);
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: var(--border-radius);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+            width: 100%;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 2rem;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .footer-logo img {
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .footer-logo-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .footer-links h3 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .footer-links ul {
+            list-style: none;
+        }
+
+        .footer-links ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links ul li a {
+            color: #ddd;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-links ul li a:hover {
+            color: var(--accent-color);
+        }
+
+        .copyright {
+            margin-top: 2rem;
+            text-align: center;
+            color: #ddd;
+            font-size: 0.9rem;
+        }
+
+        /* Table Styles */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+
+        thead {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .documentation {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                position: relative;
+                top: 0;
+                margin-bottom: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                padding: 1rem;
+            }
+
+            nav ul {
+                margin-top: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            nav ul li {
+                margin: 0.5rem;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="navbar">
+                <a href="index.html" class="logo">
+                    <div>
+                        <i class="fas fa-save" style="font-size: 32px; color: #2980b9;"></i>
+                    </div>
+                    <div>
+                        <span class="logo-text">SavePlus</span>
+                        <span class="logo-version">v1.2.0</span>
+                    </div>
+                </a>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="features.html">Features</a></li>
+                        <li><a href="documentation.html" class="active">Documentation</a></li>
+                        <li><a href="download.html">Download</a></li>
+                        <li><a href="changelog.html">Changelog</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Documentation Section -->
+    <section class="container documentation">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Documentation</h3>
+            <ul>
+                <li><a href="#introduction">Introduction</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#getting-started">Getting Started</a></li>
+                <li class="section-head">Core Features</li>
+                <li><a href="#save-plus">Save Plus</a></li>
+                <li><a href="#save-as-new">Save As New</a></li>
+                <li><a href="#auto-backup">Automatic Backups</a></li>
+                <li><a href="#version-history">Version History</a></li>
+                <li><a href="#name-generator">Name Generator</a></li>
+                <li><a href="#save-reminders">Save Reminders</a></li>
+                <li class="section-head">Settings</li>
+                <li><a href="#preferences">Preferences</a></li>
+                <li><a href="#file-options">File Options</a></li>
+                <li><a href="#path-settings">Path Settings</a></li>
+                <li><a href="#ui-settings">UI Settings</a></li>
+                <li class="section-head">Troubleshooting</li>
+                <li><a href="#faq">Frequently Asked Questions</a></li>
+                <li><a href="#common-issues">Common Issues</a></li>
+                <li><a href="#support">Getting Support</a></li>
             </ul>
         </div>
 
@@ -62,11 +525,15 @@
                             <li>Linux: <code>/home/[username]/maya/scripts</code></li>
                         </ul>
                     </li>
-                    <li>Launch Maya and run the following Python code to install the shelf button:
+                    <li>Launch Maya and run the following Python code in the Script Editor to create a shelf button:
                         <pre><code>import savePlus_launcher
 savePlus_launcher.install_shelf_button()</code></pre>
                     </li>
                 </ol>
+                
+                <div class="note">
+                    <p><strong>Note:</strong> After installation, you can launch SavePlus by clicking the shelf button or by running <code>import savePlus_launcher; savePlus_launcher.launch_save_plus()</code> in Maya's Script Editor.</p>
+                </div>
                 
                 <h3>Verifying Installation</h3>
                 <p>To verify that SavePlus has been installed correctly:</p>
@@ -675,460 +1142,4 @@ savePlus_launcher.install_shelf_button()</code></pre>
         </div>
     </footer>
 </body>
-</html><!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SavePlus - Documentation</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2980b9;
-            --secondary-color: #3498db;
-            --accent-color: #f39c12;
-            --dark-color: #333;
-            --light-color: #f8f9fa;
-            --success-color: #4CAF50;
-            --warning-color: #FFC107;
-            --danger-color: #F44336;
-            --text-color: #444;
-            --border-radius: 4px;
-            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            --transition: all 0.3s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: #f4f7f9;
-            scroll-behavior: smooth;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* Header */
-        header {
-            background-color: white;
-            box-shadow: var(--box-shadow);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 0;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-        }
-
-        .logo img {
-            height: 40px;
-            margin-right: 10px;
-        }
-
-        .logo-text {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .logo-version {
-            font-size: 0.75rem;
-            color: #7f8c8d;
-            margin-left: 5px;
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-
-        nav ul li {
-            margin-left: 1.5rem;
-        }
-
-        nav ul li a {
-            text-decoration: none;
-            color: var(--dark-color);
-            font-weight: 500;
-            transition: var(--transition);
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-        }
-
-        nav ul li a:hover {
-            color: var(--primary-color);
-            background-color: rgba(41, 128, 185, 0.05);
-        }
-
-        nav ul li a.active {
-            color: var(--primary-color);
-            border-bottom: 3px solid var(--primary-color);
-        }
-
-        /* Documentation Layout */
-        .documentation {
-            display: flex;
-            gap: 2rem;
-            padding: 3rem 0;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            position: sticky;
-            top: 100px;
-            align-self: flex-start;
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: 1.5rem;
-        }
-
-        .sidebar h3 {
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 1px solid #eee;
-            color: var(--dark-color);
-        }
-
-        .sidebar ul {
-            list-style: none;
-        }
-
-        .sidebar ul li {
-            margin-bottom: 0.75rem;
-        }
-
-        .sidebar ul li a {
-            text-decoration: none;
-            color: #666;
-            transition: var(--transition);
-            display: block;
-            padding: 0.3rem 0;
-        }
-
-        .sidebar ul li a:hover {
-            color: var(--primary-color);
-            transform: translateX(5px);
-        }
-
-        .sidebar ul li.section-head {
-            font-weight: 600;
-            margin-top: 1rem;
-            color: var(--dark-color);
-        }
-
-        /* Main Content */
-        .content {
-            flex: 1;
-            background-color: white;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            padding: 2rem;
-        }
-
-        .content h2 {
-            margin-bottom: 1.5rem;
-            color: var(--primary-color);
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #eee;
-        }
-
-        .content h3 {
-            margin: 2rem 0 1rem;
-            color: var(--dark-color);
-        }
-
-        .content h4 {
-            margin: 1.5rem 0 0.75rem;
-            color: #444;
-        }
-
-        .content p {
-            margin-bottom: 1rem;
-        }
-
-        .content ul, .content ol {
-            margin-bottom: 1.5rem;
-            padding-left: 2rem;
-        }
-
-        .content li {
-            margin-bottom: 0.5rem;
-        }
-
-        .content img {
-            max-width: 100%;
-            border-radius: var(--border-radius);
-            margin: 1.5rem 0;
-            box-shadow: var(--box-shadow);
-        }
-
-        .content code {
-            background-color: #f5f5f5;
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-            font-family: 'Courier New', Courier, monospace;
-        }
-
-        .content pre {
-            background-color: #f5f5f5;
-            padding: 1rem;
-            border-radius: var(--border-radius);
-            overflow-x: auto;
-            margin-bottom: 1.5rem;
-        }
-
-        .content pre code {
-            padding: 0;
-            background-color: transparent;
-        }
-
-        .content blockquote {
-            margin: 1.5rem 0;
-            padding: 1rem;
-            border-left: 4px solid var(--primary-color);
-            background-color: #f8f9fa;
-        }
-
-        .content blockquote p:last-child {
-            margin-bottom: 0;
-        }
-
-        .feature-card {
-            background-color: #f8f9fa;
-            border-radius: var(--border-radius);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .feature-card h4 {
-            color: var(--primary-color);
-            margin-top: 0;
-        }
-
-        .note {
-            background-color: rgba(52, 152, 219, 0.1);
-            border-left: 4px solid var(--primary-color);
-            padding: 1rem;
-            margin: 1.5rem 0;
-            border-radius: var(--border-radius);
-        }
-
-        .tip {
-            background-color: rgba(46, 204, 113, 0.1);
-            border-left: 4px solid #2ecc71;
-            padding: 1rem;
-            margin: 1.5rem 0;
-            border-radius: var(--border-radius);
-        }
-
-        .warning {
-            background-color: rgba(243, 156, 18, 0.1);
-            border-left: 4px solid var(--accent-color);
-            padding: 1rem;
-            margin: 1.5rem 0;
-            border-radius: var(--border-radius);
-        }
-
-        /* Footer */
-        footer {
-            background-color: var(--dark-color);
-            color: white;
-            padding: 2rem 0;
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 2rem;
-        }
-
-        .footer-logo {
-            display: flex;
-            align-items: center;
-        }
-
-        .footer-logo img {
-            height: 30px;
-            margin-right: 10px;
-        }
-
-        .footer-logo-text {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: white;
-        }
-
-        .footer-links h3 {
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-        }
-
-        .footer-links ul {
-            list-style: none;
-        }
-
-        .footer-links ul li {
-            margin-bottom: 0.5rem;
-        }
-
-        .footer-links ul li a {
-            color: #ddd;
-            text-decoration: none;
-            transition: var(--transition);
-        }
-
-        .footer-links ul li a:hover {
-            color: var(--accent-color);
-        }
-
-        .copyright {
-            margin-top: 2rem;
-            text-align: center;
-            color: #ddd;
-            font-size: 0.9rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 992px) {
-            .documentation {
-                flex-direction: column;
-            }
-
-            .sidebar {
-                width: 100%;
-                position: relative;
-                top: 0;
-                margin-bottom: 2rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .navbar {
-                flex-direction: column;
-                padding: 1rem;
-            }
-
-            nav ul {
-                margin-top: 1rem;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            nav ul li {
-                margin: 0.5rem;
-            }
-
-            .footer-content {
-                flex-direction: column;
-                align-items: center;
-                text-align: center;
-            }
-        }
-
-        /* Table Styles */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 1.5rem;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--box-shadow);
-        }
-
-        thead {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        th, td {
-            padding: 0.75rem;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-
-        tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        tbody tr:hover {
-            background-color: rgba(52, 152, 219, 0.05);
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="navbar">
-                <a href="index.html" class="logo">
-                    <div>
-                        <i class="fas fa-save" style="font-size: 32px; color: #2980b9;"></i>
-                    </div>
-                    <div>
-                        <span class="logo-text">SavePlus</span>
-                        <span class="logo-version">v1.2.0</span>
-                    </div>
-                </a>
-                <nav>
-                    <ul>
-                        <li><a href="index.html">Home</a></li>
-                        <li><a href="features.html">Features</a></li>
-                        <li><a href="documentation.html" class="active">Documentation</a></li>
-                        <li><a href="download.html">Download</a></li>
-                        <li><a href="changelog.html">Changelog</a></li>
-                    </ul>
-                </nav>
-            </div>
-        </div>
-    </header>
-
-    <!-- Documentation Section -->
-    <section class="container documentation">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <h3>Documentation</h3>
-            <ul>
-                <li><a href="#introduction">Introduction</a></li>
-                <li><a href="#installation">Installation</a></li>
-                <li><a href="#getting-started">Getting Started</a></li>
-                <li class="section-head">Core Features</li>
-                <li><a href="#save-plus">Save Plus</a></li>
-                <li><a href="#save-as-new">Save As New</a></li>
-                <li><a href="#auto-backup">Automatic Backups</a></li>
-                <li><a href="#version-history">Version History</a></li>
-                <li><a href="#name-generator">Name Generator</a></li>
-                <li><a href="#save-reminders">Save Reminders</a></li>
-                <li class="section-head">Settings</li>
-                <li><a href="#preferences">Preferences</a></li>
-                <li><a href="#file-options">File Options</a></li>
-                <li><a href="#path-settings">Path Settings</a></li>
-                <li><a href="#ui-settings">UI Settings</a></li>
-                <li class="section-head">Troubleshooting</li>
-                <li><a href="#faq">Frequently Asked Questions</a></li>
-                <li><a href="#common-issues">Common Issues</a></li>
-                <li><a href="#support">Getting Support</a></li>
+</html>
