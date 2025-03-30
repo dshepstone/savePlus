@@ -501,18 +501,14 @@
                     <li>Download the SavePlus ZIP package from the <a href="download.html">download page</a></li>
                     <li>Extract the contents to a temporary location</li>
                     <li>Launch Maya 2025</li>
-                    <li>Drag and drop the <code>install_saveplus.py</code> file into Maya's viewport</li>
-                    <li>The installer will automatically:
-                        <ul>
-                            <li>Copy all necessary files to your Maya scripts directory</li>
-                            <li>Create a shelf button for easy access</li>
-                            <li>Display a confirmation message when complete</li>
-                        </ul>
-                    </li>
+                    <li>Drag and drop the <code>install_saveplus.mel</code> file into Maya's viewport</li>
+                    <li>When prompted, click "Install" to create a shelf button</li>
+                    <li>A confirmation message will appear when installation is complete</li>
                 </ol>
                 
                 <div class="tip">
-                    <p><strong>Tip:</strong> The quick install method adds a convenient SavePlus button to your current Maya shelf, allowing you to launch the tool with a single click.</p>
+                    <p><strong>Tip:</strong> The MEL installer automatically creates a convenient SavePlus button on your current Maya
+                        shelf, allowing you to launch the tool with a single click.</p>
                 </div>
                 
                 <h4>Method 2: Manual Installation</h4>
@@ -525,14 +521,14 @@
                             <li>Linux: <code>/home/[username]/maya/scripts</code></li>
                         </ul>
                     </li>
-                    <li>Launch Maya and run the following Python code in the Script Editor to create a shelf button:
-                        <pre><code>import savePlus_launcher
-savePlus_launcher.install_shelf_button()</code></pre>
+                    <li>Launch Maya and run the following MEL code in the Script Editor to create a shelf button:
+                        <pre><code>source "install_saveplus.mel";</code></pre>
                     </li>
                 </ol>
                 
                 <div class="note">
-                    <p><strong>Note:</strong> After installation, you can launch SavePlus by clicking the shelf button or by running <code>import savePlus_launcher; savePlus_launcher.launch_save_plus()</code> in Maya's Script Editor.</p>
+                    <p><strong>Note:</strong> After installation, you can launch SavePlus by clicking the shelf button or by running
+                        <code>import savePlus_launcher; savePlus_launcher.launch_save_plus()</code> in Maya's Script Editor.</p>
                 </div>
                 
                 <h3>Verifying Installation</h3>
@@ -544,9 +540,10 @@ savePlus_launcher.install_shelf_button()</code></pre>
                 </ol>
                 
                 <div class="warning">
-                    <p><strong>Note:</strong> If you encounter any issues during installation, please refer to the <a href="#common-issues">Common Issues</a> section or contact <a href="#support">support</a>.</p>
+                    <p><strong>Note:</strong> If you encounter any issues during installation, please refer to the <a
+                            href="#common-issues">Common Issues</a> section or contact <a href="#support">support</a>.</p>
                 </div>
-            </section>
+                </section>
 
             <section id="getting-started">
                 <h2>Getting Started</h2>
@@ -1007,13 +1004,17 @@ savePlus_launcher.launch_save_plus()</code></pre>
 
             <section id="common-issues">
                 <h2>Common Issues</h2>
-                
+            
                 <h3>Installation Problems</h3>
-                
+            
                 <h4>Issue: SavePlus doesn't appear on the shelf after installation</h4>
-                <p><strong>Solution:</strong> Try manually adding the shelf button by running:</p>
-                <pre><code>import savePlus_launcher
-savePlus_launcher.install_shelf_button()</code></pre>
+                <p><strong>Solution:</strong> Try manually running the MEL installer by entering this in the Script Editor:</p>
+                <pre><code>source "install_saveplus.mel";</code></pre>
+            
+                <h4>Issue: "Cannot find procedure" error when running the installer</h4>
+                <p><strong>Solution:</strong> Make sure you've extracted all files from the ZIP package and that the MEL file is
+                    accessible to Maya. Try specifying the full path to the file:</p>
+                <pre><code>source "C:/path/to/install_saveplus.mel";</code></pre>
                 
                 <h4>Issue: Import errors when launching SavePlus</h4>
                 <p><strong>Solution:</strong> Ensure all SavePlus files are in your Maya scripts directory. If issues persist, try reinstalling using the quick install method.</p>
@@ -1124,15 +1125,15 @@ savePlus_launcher.install_shelf_button()</code></pre>
                     <ul>
                         <li><a href="documentation.html#installation">Installation Guide</a></li>
                         <li><a href="documentation.html#faq">FAQ</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus" target="_blank">GitHub Repository</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus/issues" target="_blank">Report Issues</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Report Issues</a></li>
                     </ul>
                 </div>
                 <div class="footer-links">
                     <h3>Contact</h3>
                     <ul>
-                        <li><a href="mailto:contact@example.com">Email Support</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">Community Forum</a></li>
+                        <li><a href="mailto:fair.branch3171@shepstone.ca">Email Support</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Community Forum</a></li>
                     </ul>
                 </div>
             </div>
