@@ -84,7 +84,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_FILE_EXPANDED = "SavePlusFileExpanded"
     OPT_VAR_NAME_EXPANDED = "SavePlusNameExpanded"
     OPT_VAR_LOG_EXPANDED = "SavePlusLogExpanded"
-    
+    OPT_VAR_RESPECT_PROJECT = "SavePlusRespectProject"
+
     # New option variables
     OPT_VAR_ENABLE_AUTO_BACKUP = "SavePlusEnableAutoBackup"
     OPT_VAR_BACKUP_INTERVAL = "SavePlusBackupInterval"
@@ -388,7 +389,28 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add option to use the current directory
             self.use_current_dir = QCheckBox("Use current directory")
             self.use_current_dir.setChecked(True)
+
+            # Add option to respect project structure
+            self.respect_project_structure = QCheckBox("Respect Maya project structure")
+            self.respect_project_structure.setChecked(self.load_option_var(self.OPT_VAR_RESPECT_PROJECT, True))
+            self.respect_project_structure.setToolTip("Save files in Maya project structure when active")
+            self.respect_project_structure.stateChanged.connect(self.update_save_location_display)
+
+            # Project status indicator
+            self.project_status_label = QLabel("Project: Not detected")
+            self.project_status_label.setStyleSheet("color: #666666; font-size: 10px;")
             
+            project_reset_layout = QHBoxLayout()
+            self.reset_project_button = QPushButton("Reset Project Display")
+            self.reset_project_button.clicked.connect(self.direct_reset_project_display)
+            self.reset_project_button.setToolTip("Manually reset the project display for new files")
+            self.reset_project_button.setFixedWidth(150)
+            project_reset_layout.addWidget(self.reset_project_button)
+            project_reset_layout.addStretch()
+
+            # Add this to your form layout, after the project_status_label row:
+            file_layout.addRow("", project_reset_layout)
+
             # Create layout for save reminder controls
             save_reminder_layout = QHBoxLayout()
             save_reminder_layout.setContentsMargins(0, 0, 0, 0)
@@ -416,6 +438,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add to form layout
             file_layout.addRow("File Type:", self.filetype_combo)
             file_layout.addRow("", self.use_current_dir)
+            file_layout.addRow("", self.respect_project_structure)  # Add this line
+            file_layout.addRow("Project:", self.project_status_label)  # Add this line
             file_layout.addRow("", save_reminder_layout)
             file_layout.addRow("", self.add_version_notes)
             
@@ -799,6 +823,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.log_redirector = savePlus_ui_components.LogRedirector(self.log_text)
             self.log_redirector.start_redirect()
             
+            # Initialize project tracking
+            self.project_directory = savePlus_core.get_maya_project_directory()
+            self.update_project_display()
+
+            # Connect to Maya's workspaceChanged event to update when project changes
+            self.workspace_change_callback = None
+            try:
+                self.workspace_change_callback = cmds.scriptJob(
+                    event=["workspaceChanged", self.on_workspace_changed],
+                    protected=True
+                )
+                print(f"[SavePlus Debug] Connected to workspace change event")
+            except Exception as e:
+                print(f"[SavePlus Debug] Could not connect to workspace change event: {e}")
+
             # Log initialization message
             print("SavePlus UI initialized successfully")
             
@@ -896,6 +935,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 self.save_timer.timeout.connect(self.check_save_time)
                 print("[DEBUG] Qt timer created with proper signal connection")
 
+                # Set up file monitoring
+                self.setup_file_monitoring()
+
                 # Load the timer state from preferences without triggering toggle
                 timer_enabled = self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False)
                 if timer_enabled:
@@ -906,6 +948,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                     self.enable_timed_warning.blockSignals(False)
                     # Start timer after a delay
                     QtCore.QTimer.singleShot(1000, lambda: self.toggle_timed_warning(2))
+
+                # Check if we're starting with a new file and reset UI appropriately
+                if not cmds.file(query=True, sceneName=True):
+                    print("[SavePlus Debug] Starting with a new file - initializing UI accordingly")
+                    # Use a slight delay to ensure UI is fully initialized
+                    QtCore.QTimer.singleShot(100, self.reset_for_new_file)
+
+                # Force check for new file on startup with slight delay to ensure UI is ready
+                QtCore.QTimer.singleShot(500, self.force_reset_project_display)
+
+                # Create a periodic check for new files
+                self.new_file_timer = QTimer()
+                self.new_file_timer.setInterval(1000)  # Check every second
+                self.new_file_timer.timeout.connect(lambda: self.force_reset_project_display() 
+                                                if not cmds.file(query=True, sceneName=True) else None)
+                self.new_file_timer.start()
 
         except Exception as e:
             error_message = f"Error initializing SavePlus UI: {str(e)}"
@@ -943,10 +1001,37 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if hasattr(self, 'log_redirector') and self.log_redirector:
                 self.log_redirector.stop_redirect()
             
-            # Stop timers
-            if hasattr(self, 'save_timer') and self.save_timer:
+            # Stop Qt timer
+            if hasattr(self, 'save_timer') and self.save_timer.isActive():
                 self.save_timer.stop()
+                print("[DEBUG] Stopped Qt timer during close")
                 
+            # Kill any active scriptJobs
+            if hasattr(self, 'timer_job_id') and self.timer_job_id is not None:
+                try:
+                    cmds.scriptJob(kill=self.timer_job_id)
+                    print(f"[DEBUG] Killed timer scriptJob during close: {self.timer_job_id}")
+                    self.timer_job_id = None
+                except Exception as e:
+                    print(f"[DEBUG] Error killing scriptJob during close: {e}")
+            
+            # Kill file open job
+            if hasattr(self, 'file_open_job') and self.file_open_job is not None:
+                try:
+                    cmds.scriptJob(kill=self.file_open_job)
+                    print(f"[DEBUG] Killed file open scriptJob during close")
+                except Exception as e:
+                    print(f"[DEBUG] Error killing file open scriptJob: {e}")
+            
+            # Kill new scene job
+            if hasattr(self, 'new_scene_job') and self.new_scene_job is not None:
+                try:
+                    cmds.scriptJob(kill=self.new_scene_job)
+                    print(f"[DEBUG] Killed new scene scriptJob during close")
+                except Exception as e:
+                    print(f"[DEBUG] Error killing new scene scriptJob: {e}")
+            
+            # Stop backup timer
             if hasattr(self, 'backup_timer') and self.backup_timer:
                 self.backup_timer.stop()
             
@@ -996,6 +1081,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         # Edit menu
         edit_menu = menu_bar.addMenu("Edit")
         
+        reset_project_display_action = QAction("Reset Project Display", self)
+        reset_project_display_action.triggered.connect(self.force_reset_project_display)
+        edit_menu.addAction(reset_project_display_action)
+
         prefs_action = QAction("Preferences", self)
         prefs_action.triggered.connect(self.show_preferences)
         edit_menu.addAction(prefs_action)
@@ -1016,10 +1105,23 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         """Open file browser to select save location directory"""
         print("Opening file browser for save location directory...")
         
-        # Use default path from preferences if available
+        # Determine the starting directory for the browser
         default_path = ""
-        if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+        
+        # Check if we should use project directory
+        if hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked() and self.project_directory:
+            default_path = self.project_directory
+            print(f"Using project directory as starting point: {default_path}")
+        # Then check if we should use current file directory
+        elif self.use_current_dir.isChecked():
+            current_file = cmds.file(query=True, sceneName=True)
+            if current_file:
+                default_path = os.path.dirname(current_file)
+                print(f"Using current file directory as starting point: {default_path}")
+        # Fall back to default path from preferences if available
+        elif hasattr(self, 'pref_default_path') and self.pref_default_path.text():
             default_path = self.pref_default_path.text()
+            print(f"Using default path from preferences: {default_path}")
         
         directory = QFileDialog.getExistingDirectory(
             self, "Select Save Location Directory", default_path
@@ -1043,6 +1145,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 print(f"Selected directory: {directory}")
                 self.status_bar.showMessage(f"Directory set to: {directory}", 5000)
             
+            # Check if selected directory is in a Maya project
+            for proj_path in [self.project_directory, cmds.workspace(q=True, rd=True)]:
+                if proj_path and directory.startswith(proj_path):
+                    print(f"[SavePlus Debug] Selected directory is within project: {proj_path}")
+                    # Ensure project display is updated
+                    self.update_project_tracking()
+                    break
+
             # Uncheck the "use current directory" option since we've specified a custom one
             self.use_current_dir.setChecked(False)
             
@@ -1054,22 +1164,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def update_save_location_display(self):
         """Update the display of the current save location"""
         if hasattr(self, 'save_location_label'):
-            full_path = ""
-            if self.selected_directory:
-                full_path = self.selected_directory
-            elif hasattr(self, 'pref_default_path') and self.pref_default_path.text() and self.use_current_dir.isChecked():
-                full_path = self.pref_default_path.text()
-            else:
-                current_file = cmds.file(query=True, sceneName=True)
-                if current_file:
-                    full_path = os.path.dirname(current_file)
-                else:
-                    full_path = "Default Maya project"
+            # Use the new get_save_directory method to determine save location
+            save_dir = self.get_save_directory()
             
             # Display truncated path but set full path as tooltip
-            truncated_path = truncate_path(full_path, 40)  # Adjust max_length as needed
+            truncated_path = truncate_path(save_dir, 40)  # Adjust max_length as needed
             self.save_location_label.setText(truncated_path)
-            self.save_location_label.setToolTip(full_path)  # Show full path on hover
+            self.save_location_label.setToolTip(save_dir)  # Show full path on hover
+            
+            # Update style based on whether it's a project path
+            if self.project_directory and savePlus_core.is_path_in_project(save_dir, self.project_directory):
+                # Green text for project paths
+                self.save_location_label.setStyleSheet("color: #4CAF50; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
+            else:
+                # Blue text for non-project paths (original style)
+                self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
 
     def browse_default_save_location(self):
         """Open file browser to select default save location directory"""
@@ -1102,8 +1211,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         print("Starting Save Plus operation...")
         # Reset the save timer immediately when save is attempted
         self.last_save_time = time.time()
-        filename = self.current_full_path if self.current_full_path else self.filename_input.text()
-       
+        filename = self.filename_input.text()
+        
         if not filename:
             message = "Error: Please enter a filename"
             self.status_bar.showMessage(message, 5000)
@@ -1112,22 +1221,26 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         
         # Handle the file path
         current_file_path = cmds.file(query=True, sceneName=True)
-        current_dir = ""
         
         # Check if this is a first save
         is_first_save = not current_file_path
         
-        # If only a filename is provided (no path)
+        # Determine the appropriate save directory
+        save_directory = self.get_save_directory()
+        
+        # If a path is provided in the filename, only override it if we're explicitly
+        # using current directory or project structure
+        if os.path.dirname(filename) and (self.use_current_dir.isChecked() or 
+                                        (hasattr(self, 'respect_project_structure') and 
+                                        self.respect_project_structure.isChecked())):
+            # Extract just the basename
+            filename = os.path.basename(filename)
+        
+        # Combine directory and filename
         if not os.path.dirname(filename):
-            if self.selected_directory and not self.use_current_dir.isChecked():
-                # Use the directory selected via Browse button
-                filename = os.path.join(self.selected_directory, filename)
-                print(f"Using selected directory: {self.selected_directory}")
-            elif current_file_path and self.use_current_dir.isChecked():
-                # Use current file's directory
-                current_dir = os.path.dirname(current_file_path)
-                filename = os.path.join(current_dir, filename)
-                print(f"Using current directory: {current_dir}")
+            filename = os.path.join(save_directory, filename)
+            
+        print(f"Using directory: {save_directory}")
         
         # Apply selected file extension
         base_name, ext = os.path.splitext(filename)
@@ -1155,8 +1268,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 else:
                     print("Skipped version notes")
         
-        # Perform the save operation
-        result, message, new_file_path = savePlus_core.save_plus_proc(filename)
+        # Perform the save operation with project awareness
+        respect_project = hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked()
+        result, message, new_file_path = savePlus_core.save_plus_proc(filename, respect_project)
         self.status_bar.showMessage(message, 5000)
         print(message)
         
@@ -1531,6 +1645,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def show_about(self):
         """Show the about dialog"""
         about_dialog = savePlus_ui_components.AboutDialog(self)
+        
+        # Add project recognition information to the description
+        if hasattr(about_dialog, 'desc'):
+            project_info = "\n\nProject Recognition: SavePlus automatically recognizes Maya projects and can maintain project structure."
+            about_dialog.desc.setText(about_dialog.desc.text() + project_info)
+        
         about_dialog.exec()
     
     def show_first_time_warning(self):
@@ -1934,7 +2054,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             cmds.optionVar(iv=(self.OPT_VAR_ENABLE_AUTO_BACKUP, int(self.pref_enable_auto_backup.isChecked())))
             cmds.optionVar(iv=(self.OPT_VAR_BACKUP_INTERVAL, self.pref_backup_interval.value()))
             cmds.optionVar(iv=(self.OPT_VAR_ADD_VERSION_NOTES, int(self.add_version_notes.isChecked())))
-            
+
+            # Add to save_preferences method
+            cmds.optionVar(iv=(self.OPT_VAR_RESPECT_PROJECT, int(self.respect_project_structure.isChecked())))
+
             # Update backup timer
             if self.pref_enable_auto_backup.isChecked():
                 if not self.backup_timer.isActive():
@@ -2003,7 +2126,13 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if cmds.optionVar(exists=self.OPT_VAR_ADD_VERSION_NOTES):
                 add_version_notes = bool(cmds.optionVar(q=self.OPT_VAR_ADD_VERSION_NOTES))
                 self.add_version_notes.setChecked(add_version_notes)
-            
+
+            # Add to load_preferences method
+            if cmds.optionVar(exists=self.OPT_VAR_RESPECT_PROJECT):
+                respect_project = bool(cmds.optionVar(q=self.OPT_VAR_RESPECT_PROJECT))
+                if hasattr(self, 'respect_project_structure'):
+                    self.respect_project_structure.setChecked(respect_project)
+
             # Load timed warning preference
             if cmds.optionVar(exists=self.OPT_VAR_ENABLE_TIMED_WARNING):
                 enable_timed_warning = bool(cmds.optionVar(q=self.OPT_VAR_ENABLE_TIMED_WARNING))
@@ -2082,6 +2211,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.use_current_dir.setChecked(False)
             self.update_save_location_display()
             
+            # Check if this path is in a Maya project
+            for proj_path in [self.project_directory, cmds.workspace(q=True, rd=True)]:
+                if proj_path and reference_dir.startswith(proj_path):
+                    print(f"[SavePlus Debug] Reference path is within project: {proj_path}")
+                    # Ensure project display is updated
+                    self.update_project_tracking()
+                    break
+
             # Extract character/asset name from reference for filename suggestion
             ref_basename = os.path.basename(reference_file)
             asset_name = os.path.splitext(ref_basename)[0]
@@ -2262,6 +2399,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if hasattr(self, 'backup_timer') and self.backup_timer:
                 self.backup_timer.stop()
             
+            if hasattr(self, 'new_file_timer') and self.new_file_timer.isActive():
+                self.new_file_timer.stop()
+                print("[DEBUG] Stopped new file check timer during close")
+
             # Disable auto resize to prevent errors during shutdown
             self.auto_resize_enabled = False
         except Exception as e:
@@ -2289,6 +2430,390 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             print("[DEBUG] Timer is disabled, no action needed")
         
         print("[DEBUG] ========= BOOTSTRAP COMPLETE =========\n")
+
+    def on_workspace_changed(self):
+        """Handler for Maya workspace changes"""
+        try:
+            print(f"[SavePlus Debug] Workspace change detected")
+            
+            # Call our new comprehensive update method
+            self.update_project_tracking()
+            
+            # If "Respect project structure" is enabled, update the save location
+            if hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked():
+                # If we have a valid project directory, use it for saving
+                if self.project_directory:
+                    scenes_dir = os.path.join(self.project_directory, "scenes")
+                    if not os.path.exists(scenes_dir):
+                        try:
+                            os.makedirs(scenes_dir)
+                        except Exception as e:
+                            print(f"[SavePlus Debug] Could not create scenes directory: {e}")
+                    
+                    print(f"[SavePlus Debug] Setting save directory to project scenes: {scenes_dir}")
+                    self.selected_directory = scenes_dir
+                
+                # Update the UI
+                self.update_save_location_display()
+        except Exception as e:
+            print(f"[SavePlus Debug] Error handling workspace change: {e}")
+
+    def update_project_display(self):
+        """Update UI elements to reflect current project"""
+        print("[SavePlus Debug] update_project_display called")
+        
+        if not hasattr(self, 'project_status_label'):
+            print("[SavePlus Debug] No project_status_label found")
+            return
+            
+        if self.project_directory:
+            truncated_path = truncate_path(self.project_directory, 40)
+            self.project_status_label.setText(f"Project: {truncated_path}")
+            self.project_status_label.setToolTip(self.project_directory)
+            self.project_status_label.setStyleSheet("color: #4CAF50;")  # Green for active project
+            print(f"[SavePlus Debug] Project display updated to: {truncated_path}")
+        else:
+            # Show different text based on whether we're respecting project structure
+            if self.respect_project_structure.isChecked():
+                # Maya workspace should be used, but no project is active
+                workspace = cmds.workspace(query=True, rootDirectory=True)
+                if workspace:
+                    truncated_path = truncate_path(workspace, 40)
+                    self.project_status_label.setText(f"Project: {truncated_path}")
+                    self.project_status_label.setToolTip(workspace)
+                    self.project_status_label.setStyleSheet("color: #4CAF50;")  # Green for active project
+                    print(f"[SavePlus Debug] Project display set to workspace: {truncated_path}")
+                else:
+                    self.project_status_label.setText("No project active")
+                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red for no project
+                    print("[SavePlus Debug] No workspace found, showing 'No project active'")
+            else:
+                # We're not respecting project structure, show preference path
+                if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+                    default_path = truncate_path(self.pref_default_path.text(), 40)
+                    self.project_status_label.setText(f"Using default path: {default_path}")
+                    self.project_status_label.setToolTip(self.pref_default_path.text())
+                    self.project_status_label.setStyleSheet("color: #F39C12;")  # Orange for preference path
+                    print(f"[SavePlus Debug] Project display set to default path: {default_path}")
+                else:
+                    self.project_status_label.setText("No default path set")
+                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red for no path
+                    print("[SavePlus Debug] No default path set, showing warning message")
+
+    def get_save_directory(self):
+        """Determine the appropriate directory for saving files based on settings"""
+        # Current file's directory takes precedence when "Use current directory" is checked
+        current_file_path = cmds.file(query=True, sceneName=True)
+        
+        if current_file_path and self.use_current_dir.isChecked():
+            # Use directory of current file
+            return os.path.dirname(current_file_path)
+        
+        if self.selected_directory:
+            # Use explicitly selected directory
+            return self.selected_directory
+        
+        if self.project_directory and hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked():
+            # Use Maya project's scenes directory
+            scenes_dir = os.path.join(self.project_directory, "scenes")
+            if not os.path.exists(scenes_dir):
+                try:
+                    os.makedirs(scenes_dir)
+                except Exception as e:
+                    print(f"[SavePlus Debug] Could not create scenes directory: {e}")
+            return scenes_dir
+        
+        if current_file_path:
+            # Fallback to current file's directory
+            return os.path.dirname(current_file_path)
+        
+        # Ultimate fallback - Maya's default scenes directory
+        workspace = cmds.workspace(query=True, directory=True)
+        return os.path.join(workspace, "scenes")
+
+    def setup_file_monitoring(self):
+        """Set up monitoring for file open and new scene events"""
+        try:
+            # Debug the file create/open event triggers
+            self.debug_scriptJob = cmds.scriptJob(
+                event=["idle", lambda: self.debug_path_issue() if not cmds.file(query=True, sceneName=True) else None],
+                runOnce=True
+            )
+            print(f"[SavePlus Debug] Set up one-time debug script job")
+            
+            # Monitor for file open events
+            self.file_open_job = cmds.scriptJob(
+                event=["SceneOpened", self.on_file_opened],
+                protected=True
+            )
+            print(f"[SavePlus Debug] Connected to scene opened event")
+            
+            # Also monitor for new scene events
+            self.new_scene_job = cmds.scriptJob(
+                event=["NewSceneOpened", self.on_file_opened],
+                protected=True
+            )
+            print(f"[SavePlus Debug] Connected to new scene event")
+            
+        except Exception as e:
+            print(f"[SavePlus Debug] Could not connect to file monitoring events: {e}")
+            traceback.print_exc()
+                
+        except Exception as e:
+            print(f"[SavePlus Debug] Could not connect to file monitoring events: {e}")
+
+    def on_file_opened(self):
+        """Handle file open events"""
+        try:
+            print("[SavePlus Debug] on_file_opened triggered")
+            
+            # Get new file path
+            current_file = cmds.file(query=True, sceneName=True)
+            
+            # Check if this is a new, unsaved file
+            is_new_file = not current_file
+            
+            if is_new_file:
+                print("[SavePlus Debug] New file detected - calling reset_for_new_file")
+                self.reset_for_new_file()
+            else:
+                print(f"[SavePlus Debug] File opened: {current_file}")
+                
+                # Update UI with new file
+                self.filename_input.setText(os.path.basename(current_file))
+                self.filename_input.setToolTip(current_file)
+                
+                # Update directory tracking
+                self.selected_directory = os.path.dirname(current_file)
+                
+                # Automatically check "Use current directory"
+                self.use_current_dir.setChecked(True)
+                
+                # Check if project has changed and update project tracking
+                self.update_project_tracking()
+                
+                # Update save location display
+                self.update_save_location_display()
+            
+            # Update history tab if it's visible
+            if self.tab_widget.currentIndex() == 1:  # History tab
+                self.populate_history()
+        except Exception as e:
+            print(f"[SavePlus Debug] Error handling file open: {e}")
+            traceback.print_exc()
+
+    def update_project_tracking(self):
+        """Update project tracking when files or workspaces change"""
+        try:
+            # Get current Maya project
+            current_project = savePlus_core.get_maya_project_directory()
+            
+            # If project has changed, update it
+            if current_project != self.project_directory:
+                print(f"[SavePlus Debug] Project changed from {self.project_directory} to {current_project}")
+                self.project_directory = current_project
+                
+                # Update UI to reflect project change
+                self.update_project_display()
+                
+                # If no project is active but we have a default path in preferences, use that
+                if not self.project_directory and hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+                    default_path = self.pref_default_path.text()
+                    print(f"[SavePlus Debug] No project active, using default path: {default_path}")
+                    
+                    # Only update if we're respecting project structure
+                    if hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked():
+                        self.selected_directory = default_path
+            
+            # Also update save location display to reflect any changes
+            self.update_save_location_display()
+        except Exception as e:
+            print(f"[SavePlus Debug] Error updating project tracking: {e}")
+
+    def debug_path_issue(self):
+        """Debug function to print current project paths and settings"""
+        print("\n" + "="*80)
+        print("DEBUGGING PROJECT PATH ISSUE")
+        print("="*80)
+        
+        print(f"Current file: {cmds.file(query=True, sceneName=True) or 'NONE (new file)'}")
+        print(f"Maya workspace: {cmds.workspace(query=True, rootDirectory=True) or 'NONE'}")
+        print(f"self.project_directory: {self.project_directory or 'NONE'}")
+        print(f"self.selected_directory: {self.selected_directory or 'NONE'}")
+        print(f"Default path from prefs: {self.pref_default_path.text() if hasattr(self, 'pref_default_path') else 'NONE'}")
+        print(f"'Use current directory' checked: {self.use_current_dir.isChecked()}")
+        print(f"'Respect project structure' checked: {self.respect_project_structure.isChecked()}")
+        
+        print("-"*80)
+        print("FIXING PROJECT PATH DISPLAY")
+        print("-"*80)
+        
+        # Force reset project path for new files
+        if not cmds.file(query=True, sceneName=True):
+            print("Detected new file - resetting project path display")
+            
+            # Clear the stored project directory for new files if not respecting project structure
+            if not self.respect_project_structure.isChecked():
+                self.project_directory = None
+                print("Cleared project_directory (not respecting project structure)")
+            
+            # Set the proper selected directory
+            if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+                self.selected_directory = self.pref_default_path.text()
+                print(f"Set selected_directory to preference default: {self.selected_directory}")
+            else:
+                # Fall back to Maya's default scenes directory
+                workspace = cmds.workspace(query=True, directory=True)
+                scenes_dir = os.path.join(workspace, "scenes")
+                self.selected_directory = scenes_dir
+                print(f"Set selected_directory to Maya default: {self.selected_directory}")
+            
+            # Update the project display
+            self.update_project_display()
+            
+            # Update the save location display
+            self.update_save_location_display()
+            
+            print("Project display updated")
+        
+        print("="*80)
+        return True  # Return true so this can be called from scriptJob if needed
+
+    def reset_for_new_file(self):
+        """Reset UI for new, unsaved files"""
+        print("[SavePlus Debug] reset_for_new_file called")
+        
+        # Check if this is actually a new file
+        if cmds.file(query=True, sceneName=True):
+            print("[SavePlus Debug] Not a new file, skipping reset")
+            return
+        
+        print("[SavePlus Debug] CONFIRMED NEW FILE - Resetting display")
+        
+        # Reset UI filename
+        self.filename_input.setText("untitled.ma")
+        
+        # Handle the directory based on settings
+        if self.respect_project_structure.isChecked():
+            # If respecting project structure, use the current Maya workspace
+            workspace_dir = cmds.workspace(query=True, rootDirectory=True)
+            scenes_dir = os.path.join(workspace_dir, "scenes")
+            self.selected_directory = scenes_dir
+            self.project_directory = workspace_dir
+            print(f"[SavePlus Debug] Using workspace scenes directory: {scenes_dir}")
+        else:
+            # If not respecting project structure, use the default path from preferences
+            if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+                default_path = self.pref_default_path.text()
+                self.selected_directory = default_path
+                # Clear the project directory to show "no project active"
+                self.project_directory = None
+                print(f"[SavePlus Debug] Using preference default path: {default_path}")
+            else:
+                # Fall back to Maya's default scenes directory
+                workspace = cmds.workspace(query=True, directory=True)
+                scenes_dir = os.path.join(workspace, "scenes")
+                self.selected_directory = scenes_dir
+                self.project_directory = None
+                print(f"[SavePlus Debug] Using Maya default scenes directory: {scenes_dir}")
+        
+        # Update the UI displays
+        self.update_project_display()
+        self.update_save_location_display()
+        print("[SavePlus Debug] Reset for new file completed")
+
+    def force_reset_project_display(self):
+        """Force reset project display for new files - ignores Maya's workspace"""
+        try:
+            print("[SavePlus Debug] FORCE RESET of project display called")
+            
+            # Only proceed if this is a new file
+            if cmds.file(query=True, sceneName=True):
+                print("[SavePlus Debug] Not a new file, skipping force reset")
+                return False
+                
+            print("[SavePlus Debug] New file confirmed - forcing project reset")
+            
+            # Forcibly update project display regardless of Maya's workspace
+            if not self.respect_project_structure.isChecked():
+                # If not respecting project structure, force clear project path
+                self.project_directory = None
+                self.project_status_label.setText("No project active")
+                self.project_status_label.setStyleSheet("color: #F44336;")  # Red
+                self.project_status_label.setToolTip("No project is active for this new file")
+                
+                # Set selected directory to preference default if available
+                if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+                    self.selected_directory = self.pref_default_path.text()
+                else:
+                    # Default to Maya scenes directory
+                    workspace = cmds.workspace(query=True, directory=True)
+                    self.selected_directory = os.path.join(workspace, "scenes")
+            else:
+                # If respecting project structure, show current workspace but make it clear it's for a new file
+                workspace = cmds.workspace(query=True, rootDirectory=True)
+                if workspace:
+                    self.project_directory = workspace
+                    truncated_path = truncate_path(workspace, 40)
+                    self.project_status_label.setText(f"Project (new file): {truncated_path}")
+                    self.project_status_label.setStyleSheet("color: #FFA500;")  # Orange
+                    self.project_status_label.setToolTip(f"Using workspace for new file: {workspace}")
+                    
+                    # Set selected directory to workspace scenes folder
+                    self.selected_directory = os.path.join(workspace, "scenes")
+                else:
+                    # No workspace set
+                    self.project_directory = None
+                    self.project_status_label.setText("No project active")
+                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red
+                    self.project_status_label.setToolTip("No project is active for this new file")
+                    
+                    # Default to Maya scenes directory
+                    workspace = cmds.workspace(query=True, directory=True)
+                    self.selected_directory = os.path.join(workspace, "scenes")
+            
+            # Update filename to default
+            self.filename_input.setText("untitled.ma")
+            
+            # Force update save location display
+            self.update_save_location_display()
+            
+            print("[SavePlus Debug] Force reset of project display completed")
+            return True
+        except Exception as e:
+            print(f"[SavePlus Debug] Error in force_reset_project_display: {e}")
+            traceback.print_exc()
+            return False
+
+    def direct_reset_project_display(self):
+        """Directly manipulate the project display label regardless of Maya's state"""
+        print("[SavePlus] Performing direct reset of project display")
+        
+        # Get reference to the project label
+        if not hasattr(self, 'project_status_label'):
+            print("[SavePlus] No project label found to reset")
+            return
+        
+        # Force text change regardless of internal state
+        self.project_status_label.setText("No active project (manually reset)")
+        self.project_status_label.setStyleSheet("color: #888888; font-style: italic;")
+        self.project_status_label.setToolTip("Project display was manually reset")
+        
+        # If we want to preserve some internal state consistency
+        self.project_directory = None
+        
+        # Update save location
+        if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
+            self.selected_directory = self.pref_default_path.text()
+        else:
+            # Default to Maya's default scenes folder
+            workspace = cmds.workspace(query=True, directory=True)
+            self.selected_directory = os.path.join(workspace, "scenes")
+        
+        # Update the save location display
+        self.update_save_location_display()
+        
+        print("[SavePlus] Direct reset of project display completed")
 
     def apply_ui_settings(self):
         """Apply UI settings from preferences"""

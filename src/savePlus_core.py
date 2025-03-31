@@ -19,6 +19,54 @@ def debug_print(message):
     if DEBUG_MODE:
         print(f"[SavePlus Debug] {message}")
 
+def get_maya_project_directory():
+    """Get the current Maya project directory"""
+    try:
+        project_dir = cmds.workspace(query=True, rootDirectory=True)
+        if project_dir:
+            return normalize_path(project_dir)
+        return None
+    except Exception as e:
+        debug_print(f"Error getting Maya project directory: {e}")
+        return None
+
+def is_path_in_project(file_path, project_dir=None):
+    """Check if a file path is within a Maya project structure"""
+    if not file_path or not os.path.exists(file_path):
+        return False
+        
+    if not project_dir:
+        project_dir = get_maya_project_directory()
+        if not project_dir:
+            return False
+    
+    # Normalize paths for comparison
+    file_path = normalize_path(file_path)
+    project_dir = normalize_path(project_dir)
+    
+    # Check if file path starts with project directory
+    return file_path.startswith(project_dir)
+
+def get_project_relative_path(file_path, project_dir=None):
+    """Get the path relative to the Maya project"""
+    if not file_path:
+        return ""
+        
+    if not project_dir:
+        project_dir = get_maya_project_directory()
+        if not project_dir:
+            return file_path
+    
+    # Normalize paths for comparison
+    file_path = normalize_path(file_path)
+    project_dir = normalize_path(project_dir)
+    
+    # If file is in project, return relative path
+    if file_path.startswith(project_dir):
+        return os.path.relpath(file_path, project_dir)
+    
+    return file_path
+
 def normalize_path(path):
     """Normalize file paths to use consistent forward slashes."""
     if path:
@@ -168,9 +216,9 @@ class VersionHistoryModel:
             debug_print(f"Error exporting history: {e}")
             return False
 
-def save_plus_proc(file_path=None):
+def save_plus_proc(file_path=None, respect_project=True):
     """Core function that implements the SavePlus functionality"""
-    print("=== MODIFIED SavePlus Process Started (Version 2.0) ===")
+    print("=== MODIFIED SavePlus Process Started (Version 2.1) ===")
     
     # Normalize the input path
     if file_path:
@@ -179,6 +227,15 @@ def save_plus_proc(file_path=None):
     # Log current Maya scene information
     current_scene = cmds.file(query=True, sceneName=True)
     print(f"Current scene: {current_scene or 'Unsaved scene'}")
+    
+    # Project detection
+    project_dir = get_maya_project_directory()
+    if project_dir:
+        print(f"Current Maya project: {project_dir}")
+        if current_scene and is_path_in_project(current_scene, project_dir):
+            print(f"Current scene is within project structure: {get_project_relative_path(current_scene, project_dir)}")
+    else:
+        print("No Maya project set or detected")
     
     if not file_path:
         file_path = cmds.file(query=True, sceneName=True)
@@ -429,23 +486,51 @@ def save_plus_proc(file_path=None):
         max_attempts = 100  # Prevent infinite loops
         available_found = False
         
+        # Store the original new_base_name to preserve it during attempts
+        original_base_name = new_base_name
+        
         # Try to find an available filename by incrementing numbers
         while not available_found and attempt < max_attempts:
-            attempt_version = new_base_name
+            # Important: Start with the original base name each time
+            attempt_version = original_base_name
             
-            # Try to find and increment the last number in the filename
-            number_match = re.search(r'(\D*)(\d+)(\D*)$', attempt_version)
-            if number_match:
-                prefix = number_match.group(1)
-                number = number_match.group(2)
-                suffix = number_match.group(3)
+            # Check for project identifier pattern (e.g., J01_, A02_) to preserve it
+            project_prefix_match = re.match(r'^([A-Z]\d+)_(.+)$', attempt_version)
+            
+            if project_prefix_match:
+                # Extract project identifier and remainder
+                project_id = project_prefix_match.group(1)
+                remainder = project_prefix_match.group(2)
                 
-                # Increment number by current attempt count
-                attempt_number = str(int(number) + attempt).zfill(len(number))
-                attempt_version = prefix + attempt_number + suffix
+                # Try to find and increment the last number in the remainder
+                number_match = re.search(r'(\D*)(\d+)(\D*)$', remainder)
+                if number_match:
+                    prefix = number_match.group(1)
+                    number = number_match.group(2)
+                    suffix = number_match.group(3)
+                    
+                    # Increment number by current attempt count
+                    attempt_number = str(int(number) + attempt).zfill(len(number))
+                    # Reconstruct with project identifier preserved
+                    attempt_version = f"{project_id}_{prefix}{attempt_number}{suffix}"
+                else:
+                    # If no number in remainder, add attempt number
+                    attempt_version = f"{project_id}_{remainder}{attempt+1}"
             else:
-                # Fallback if no number pattern found
-                attempt_version = f"{new_base_name}_{attempt}"
+                # Regular case (no project identifier)
+                # Try to find and increment the last number in the filename
+                number_match = re.search(r'(\D*)(\d+)(\D*)$', attempt_version)
+                if number_match:
+                    prefix = number_match.group(1)
+                    number = number_match.group(2)
+                    suffix = number_match.group(3)
+                    
+                    # Increment number by current attempt count
+                    attempt_number = str(int(number) + attempt).zfill(len(number))
+                    attempt_version = prefix + attempt_number + suffix
+                else:
+                    # Fallback if no number pattern found
+                    attempt_version = f"{original_base_name}_{attempt}"
             
             # Create the complete filename with extension
             attempt_filename = attempt_version + ext
@@ -468,10 +553,23 @@ def save_plus_proc(file_path=None):
         if not available_found:
             print(f"ERROR: Could not find an available filename after {max_attempts} attempts")
             return False, f"Error: Could not find an available filename after {max_attempts} attempts", ""
-    
+
     # Rename and save
+    # FIX: This section should NOT be indented under the if statement above
     try:
         print(f"Renaming file to: {new_file_path}")
+        
+        # Make sure the target directory exists
+        target_dir = os.path.dirname(new_file_path)
+        if not os.path.exists(target_dir):
+            try:
+                os.makedirs(target_dir)
+                print(f"Created directory: {target_dir}")
+            except Exception as e:
+                error_message = f"ERROR: Could not create directory {target_dir}: {e}"
+                print(error_message)
+                return False, error_message, ""
+        
         cmds.file(rename=new_file_path)
         print("Saving file...")
         
@@ -487,9 +585,13 @@ def save_plus_proc(file_path=None):
         print("=== SavePlus Process Completed Successfully ===")
         return True, f"{new_file_name} saved successfully", new_file_path
     except Exception as e:
-        print(f"ERROR during save: {e}")
+        error_message = f"ERROR during save: {e}"
+        print(error_message)
         print("=== SavePlus Process Failed ===")
         return False, f"Error saving file: {e}", ""
+            
+    # Make sure there's a final return statement to catch any unexpected code paths
+    return False, "An unexpected error occurred during save process", ""
     
 def load_option_var(name, default_value):
     """Load an option variable with a default value"""
