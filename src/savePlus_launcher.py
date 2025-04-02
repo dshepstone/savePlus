@@ -19,7 +19,7 @@ from maya import cmds
 from maya import mel  # Import mel here for shelf button installation
 
 # Version for this launcher
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 def setup_import_paths():
     """Setup import paths for SavePlus modules"""

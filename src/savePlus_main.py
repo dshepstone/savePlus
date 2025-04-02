@@ -134,50 +134,19 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             header_layout = QHBoxLayout()
             header_layout.setContentsMargins(10, 5, 10, 5)
             
-            # Title with version
-            title_layout = QVBoxLayout()
-            title_layout.setSpacing(0)
-            title_layout.setContentsMargins(0, 0, 0, 0)
-            
-            title = QLabel("SavePlus")
-            title_font = title.font()
-            title_font.setPointSize(14)
-            title_font.setBold(True)
-            title.setFont(title_font)
-            title.setStyleSheet("color: #2980b9;")
-            
-            version_label = QLabel(f"v{VERSION}")
+           # Minimal title in tab header
+            title_layout = QHBoxLayout()
+            title_layout.setContentsMargins(5, 2, 5, 2)
+
+            # Version label only in small text
+            version_label = QLabel(f"SavePlus v{VERSION}")
             version_label.setStyleSheet("color: #7f8c8d; font-size: 9px;")
-            version_label.setAlignment(Qt.AlignLeft)
-            
-            title_layout.addWidget(title)
+            version_label.setAlignment(Qt.AlignRight)
+
+            title_layout.addStretch()
             title_layout.addWidget(version_label)
-            
-            # Description on the right
-            description = QLabel("Increment and save your Maya files")
-            description.setStyleSheet("color: #555555; font-size: 11px;")
-            description.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-            
-            # Add to header layout
-            header_layout.addLayout(title_layout)
-            header_layout.addStretch()
-            header_layout.addWidget(description)
-            
-            # Add header to main layout
-            header_container = QFrame()
-            header_container.setFrameShape(QFrame.StyledPanel)
-            header_container.setStyleSheet("QFrame { background-color: #f8f9fa; border-radius: 4px; }")
-            header_container.setLayout(header_layout)
-            
-            main_layout.addWidget(header_container)
-            
-            # Create a subtle separator
-            separator = QFrame()
-            separator.setFrameShape(QFrame.HLine)
-            separator.setFrameShadow(QFrame.Sunken)
-            separator.setStyleSheet("background-color: #e0e0e0; max-height: 1px;")
-            main_layout.addWidget(separator)
-            main_layout.addSpacing(5)  # Add a small space after the separator
+
+            main_layout.addLayout(title_layout)
             
             # --- CREATE TABS ---
             
