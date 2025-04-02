@@ -11,7 +11,7 @@ from datetime import datetime
 from maya import cmds
 
 # Constants
-VERSION = "1.2.1"
+VERSION = "1.2.2"
 DEBUG_MODE = True
 
 def debug_print(message):
