@@ -119,6 +119,15 @@ def quick_install():
         # Get Maya scripts directory
         maya_script_dir = cmds.internalVar(userScriptDir=True)
         
+        # Get Maya icons directory (for shelf button icons)
+        maya_icons_dir = os.path.join(os.path.dirname(os.path.dirname(maya_script_dir)), "prefs", "icons")
+        if not os.path.exists(maya_icons_dir):
+            try:
+                os.makedirs(maya_icons_dir)
+                print(f"Created Maya icons directory: {maya_icons_dir}")
+            except Exception as e:
+                print(f"Warning: Could not create Maya icons directory: {e}")
+        
         # Get the directory of this script
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
@@ -131,7 +140,7 @@ def quick_install():
             "savePlus_launcher.py"
         ]
         
-        # Copy files
+        # Copy script files
         for file_name in files_to_copy:
             source_file = os.path.join(current_dir, file_name)
             dest_file = os.path.join(maya_script_dir, file_name)
@@ -147,8 +156,29 @@ def quick_install():
             else:
                 print(f"Warning: Could not find {source_file}")
         
+        # Handle icon file separately - check if it exists in various locations
+        icon_sources = [
+            os.path.join(current_dir, "icons", "saveplus.png"),
+            os.path.join(current_dir, "saveplus.png"),
+            os.path.join(current_dir, "icon", "saveplus.png")
+        ]
+        
+        icon_found = False
+        icon_dest_path = os.path.join(maya_icons_dir, "saveplus.png")
+        
+        for icon_source in icon_sources:
+            if os.path.exists(icon_source):
+                # Copy icon to Maya's icons directory
+                shutil.copy2(icon_source, icon_dest_path)
+                print(f"Copied icon from {icon_source} to {maya_icons_dir}")
+                icon_found = True
+                break
+        
+        if not icon_found:
+            print("Warning: SavePlus icon not found. The shelf button will use Maya's default icon.")
+        
         # Create shelf button
-        result = install_shelf_button()
+        result = install_shelf_button(maya_icons_dir)
         
         if result:
             print("Shelf button created successfully")
@@ -162,7 +192,7 @@ def quick_install():
         return False
 
 # Create a shelf button installation function
-def install_shelf_button():
+def install_shelf_button(maya_icons_dir=None):
     """Install SavePlus buttons on the current Maya shelf"""
     try:
         # Get the active shelf
@@ -191,13 +221,20 @@ import savePlus_launcher
 savePlus_launcher.launch_save_plus()
 """
         
-        # Get path to custom icon if it exists
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(script_dir, "icons", "saveplus.png")
+        # Get path to custom icon in Maya's icons directory
+        if maya_icons_dir is None:
+            # Get Maya icons directory if not provided
+            script_dir = cmds.internalVar(userScriptDir=True)
+            maya_icons_dir = os.path.join(os.path.dirname(os.path.dirname(script_dir)), "prefs", "icons")
+        
+        icon_path = os.path.join(maya_icons_dir, "saveplus.png")
         
         # Use custom icon if available, otherwise use Maya's default
         if not os.path.exists(icon_path):
             icon_path = 'incrementalSave.png'  # Fallback to Maya's icon
+        else:
+            # Use just the filename for Maya shelf buttons, not the full path
+            icon_path = "saveplus.png"
         
         # Create or update button
         if existing_button:

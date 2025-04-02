@@ -19,6 +19,12 @@ def debug_print(message):
     if DEBUG_MODE:
         print(f"[SavePlus Debug] {message}")
 
+def normalize_path(path):
+    """Normalize file paths to use consistent forward slashes."""
+    if path:
+        return path.replace('\\', '/')
+    return path
+
 def get_maya_project_directory():
     """Get the current Maya project directory"""
     try:
@@ -66,12 +72,6 @@ def get_project_relative_path(file_path, project_dir=None):
         return os.path.relpath(file_path, project_dir)
     
     return file_path
-
-def normalize_path(path):
-    """Normalize file paths to use consistent forward slashes."""
-    if path:
-        return path.replace('\\', '/')
-    return path
 
 class VersionHistoryModel:
     """Class to manage version history data"""
@@ -555,7 +555,6 @@ def save_plus_proc(file_path=None, respect_project=True):
             return False, f"Error: Could not find an available filename after {max_attempts} attempts", ""
 
     # Rename and save
-    # FIX: This section should NOT be indented under the if statement above
     try:
         print(f"Renaming file to: {new_file_path}")
         
@@ -589,10 +588,10 @@ def save_plus_proc(file_path=None, respect_project=True):
         print(error_message)
         print("=== SavePlus Process Failed ===")
         return False, f"Error saving file: {e}", ""
-            
+    
     # Make sure there's a final return statement to catch any unexpected code paths
     return False, "An unexpected error occurred during save process", ""
-    
+
 def load_option_var(name, default_value):
     """Load an option variable with a default value"""
     try:
