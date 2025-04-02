@@ -1182,12 +1182,179 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         edit_menu.addAction(prefs_action)
         
         # Help menu
+        self.create_help_menu(menu_bar)
+    
+    def create_help_menu(self, menu_bar):
+        """
+        Create a help menu that links only to currently available pages on mayasaveplus.com
+        """
+        import webbrowser
+        
+        # Create Help menu
         help_menu = menu_bar.addMenu("Help")
         
+        # Documentation
+        documentation_action = QAction("Documentation", self)
+        documentation_action.triggered.connect(lambda: webbrowser.open("https://mayasaveplus.com/documentation.html"))
+        help_menu.addAction(documentation_action)
+        
+        # Features
+        features_action = QAction("Features", self)
+        features_action.triggered.connect(lambda: webbrowser.open("https://mayasaveplus.com/features.html"))
+        help_menu.addAction(features_action)
+        
+        # Changelog
+        changelog_action = QAction("Changelog", self)
+        changelog_action.triggered.connect(lambda: webbrowser.open("https://mayasaveplus.com/changelog.html"))
+        help_menu.addAction(changelog_action)
+        
+        help_menu.addSeparator()
+        
+        # Downloads - for updates
+        download_action = QAction("Check for Updates", self)
+        download_action.triggered.connect(lambda: webbrowser.open("https://mayasaveplus.com/download.html"))
+        help_menu.addAction(download_action)
+        
+        help_menu.addSeparator()
+        
+        # Support submenu - with email only for now
+        support_menu = help_menu.addMenu("Support")
+        
+        # Email support
+        email_support_action = QAction("Email Support", self)
+        email_support_action.triggered.connect(lambda: webbrowser.open("mailto:support@mayasaveplus.com?subject=SavePlus%20Support%20Request"))
+        support_menu.addAction(email_support_action)
+        
+        help_menu.addSeparator()
+        
+        # Visit website (homepage)
+        website_action = QAction("Visit SavePlus Website", self)
+        website_action.triggered.connect(lambda: webbrowser.open("https://mayasaveplus.com/index.html"))
+        help_menu.addAction(website_action)
+        
+        # Built-in documentation viewer
+        builtin_docs_action = QAction("Show Offline Documentation...", self)
+        builtin_docs_action.triggered.connect(self.show_offline_documentation)
+        help_menu.addAction(builtin_docs_action)
+        
+        # Keyboard shortcuts reference
+        shortcuts_action = QAction("Keyboard Shortcuts", self)
+        shortcuts_action.triggered.connect(self.show_shortcuts)
+        help_menu.addAction(shortcuts_action)
+        
+        # About SavePlus
         about_action = QAction("About SavePlus", self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
-    
+        
+        return help_menu
+
+    def check_for_updates(self):
+        """Check for updates to SavePlus"""
+        import webbrowser
+        
+        # Current version from the tool
+        current_version = VERSION
+        
+        # Show checking dialog
+        cmds.confirmDialog(
+            title="Check for Updates",
+            message=f"Current version: {current_version}\n\nChecking for updates requires an internet connection and will open your web browser.",
+            button=["Check Now", "Cancel"],
+            defaultButton="Check Now",
+            cancelButton="Cancel",
+            dismissString="Cancel"
+        )
+        
+        # Open the updates page on the custom domain
+        webbrowser.open("https://www.mayasaveplus.com/updates")
+        
+        self.status_bar.showMessage("Checking for updates...", 3000)
+
+    def show_offline_documentation(self):
+        """Display offline documentation in a dialog window"""
+        try:
+            import os
+            from PySide6.QtCore import QUrl
+            from PySide6.QtWebEngineWidgets import QWebEngineView
+            from PySide6.QtWidgets import QDialog, QVBoxLayout
+            
+            # Find the documentation HTML file path
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            doc_path = os.path.join(script_dir, "docs", "documentation.html")
+            
+            # Fallback if not found
+            if not os.path.exists(doc_path):
+                # Check in parent directory
+                doc_path = os.path.join(os.path.dirname(script_dir), "documentation.html")
+                
+                if not os.path.exists(doc_path):
+                    self.status_bar.showMessage("Documentation file not found", 5000)
+                    print(f"Documentation file not found at {doc_path}")
+                    
+                    # Ask if they want to open online docs instead
+                    response = cmds.confirmDialog(
+                        title="Documentation Not Found",
+                        message="Local documentation file could not be found.\nWould you like to open the online documentation instead?",
+                        button=["Yes", "No"],
+                        defaultButton="Yes",
+                        cancelButton="No"
+                    )
+                    
+                    if response == "Yes":
+                        import webbrowser
+                        webbrowser.open("https://mayasaveplus.com/documentation.html")
+                    
+                    return
+            
+            try:
+                # Create documentation viewer dialog
+                doc_dialog = QDialog(self)
+                doc_dialog.setWindowTitle("SavePlus Documentation")
+                doc_dialog.resize(900, 700)
+                
+                layout = QVBoxLayout(doc_dialog)
+                
+                # Create web view
+                web_view = QWebEngineView()
+                web_view.load(QUrl.fromLocalFile(doc_path))
+                
+                layout.addWidget(web_view)
+                doc_dialog.setLayout(layout)
+                
+                doc_dialog.exec()
+            except ImportError:
+                # If QtWebEngineWidgets is not available, open in external browser
+                import webbrowser
+                webbrowser.open(f"file://{doc_path}")
+                
+        except Exception as e:
+            self.status_bar.showMessage(f"Error showing documentation: {e}", 5000)
+            print(f"Error showing documentation: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def show_shortcuts(self):
+        """Display a dialog with keyboard shortcuts"""
+        shortcuts = [
+            ("Ctrl+S", "Save Plus - Increment the current file"),
+            ("Ctrl+Shift+S", "Save As New - Save with a new name"),
+            ("Ctrl+B", "Create Backup - Create a timestamped backup"),
+        ]
+        
+        # Create message with shortcuts
+        message = "SavePlus Keyboard Shortcuts:\n\n"
+        for key, desc in shortcuts:
+            message += f"{key:<15} - {desc}\n"
+        
+        # Show dialog
+        cmds.confirmDialog(
+            title="Keyboard Shortcuts",
+            message=message,
+            button=["OK"],
+            defaultButton="OK"
+        )
+
     def clear_log(self):
         """Clear the log display"""
         if hasattr(self, 'log_text') and self.log_text:
