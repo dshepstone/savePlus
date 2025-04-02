@@ -1273,11 +1273,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         result, message, new_file_path = savePlus_core.save_plus_proc(filename, respect_project)
         self.status_bar.showMessage(message, 5000)
         print(message)
-        
+
         # Update the filename field with the new filename if successful
         if result:
             new_filename = cmds.file(query=True, sceneName=True)
             if new_filename:
+                # Add these lines to maintain the directory for next saves
+                new_directory = os.path.dirname(new_filename)
+                self.selected_directory = new_directory
+                print(f"Updated selected directory to: {new_directory}")
+                
                 self.filename_input.setText(os.path.basename(new_filename))
                 print(f"Updated filename to: {os.path.basename(new_filename)}")
                 self.update_filename_preview()
