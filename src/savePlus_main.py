@@ -6,9 +6,7 @@ import os
 import time
 import re
 import traceback
-import os
-import time
-import traceback
+import subprocess
 
 from maya import cmds, mel
 from maya import cmds, mel
@@ -282,112 +280,222 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Create file options content
             file_options = QWidget()
-            file_layout = QFormLayout(file_options)
-            file_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+            file_layout = QVBoxLayout(file_options)
+            file_layout.setSpacing(10)  # Increased spacing between elements
 
-            # Add filename input field
-            filename_layout = QHBoxLayout()
+            # Add filename input field - improved layout
+            filename_section = QWidget()
+            filename_layout = QVBoxLayout(filename_section)
+            filename_layout.setContentsMargins(0, 0, 0, 0)
+            filename_layout.setSpacing(5)
+
+            filename_label = QLabel("Filename:")
+            filename_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            filename_layout.addWidget(filename_label)
+
+            filename_input_layout = QHBoxLayout()
+            filename_input_layout.setSpacing(6)  # Tighter spacing between elements
+
             self.filename_input = QLineEdit()
             self.filename_input.setMinimumWidth(250)
             self.filename_input.textChanged.connect(self.update_version_preview)
-            self.filename_input.setMaximumWidth(350)  # Limit maximum width
-            self.filename_input.setTextMargins(2, 0, 2, 0)  # Add text margins
+            self.filename_input.setStyleSheet("padding: 6px;")
             self.filename_input.home(False)  # Ensure text starts from beginning
-            # Store full path separately from display name
-            self.current_full_path = ""
-            filename_layout.addWidget(self.filename_input)
+            self.current_full_path = ""  # Store full path separately from display name
 
             # Get current file name if available
             current_file = cmds.file(query=True, sceneName=True)
             if current_file:
                 self.filename_input.setText(os.path.basename(current_file))
 
-            # Create a button group for path options
-            path_buttons_layout = QHBoxLayout()
-            path_buttons_layout.setSpacing(4)  # Tighter spacing between buttons
+            filename_input_layout.addWidget(self.filename_input)
 
-            browse_button = QPushButton("Browse")  # Even shorter text
+            # Create a button group for path options with improved styling
+            browse_button = QPushButton("Browse")
             browse_button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
             browse_button.clicked.connect(self.browse_file)
-            browse_button.setFixedWidth(80)  # Even smaller width if needed
+            browse_button.setStyleSheet("padding: 6px;")
             browse_button.setToolTip("Browse for a directory to save to")
 
             reference_path_button = QPushButton("Reference")
             reference_path_button.setIcon(self.style().standardIcon(QStyle.SP_FileDialogToParent))
             reference_path_button.clicked.connect(self.use_reference_path)
-            reference_path_button.setFixedWidth(80)  # Matching width
+            reference_path_button.setStyleSheet("padding: 6px;")
             reference_path_button.setToolTip("Use path from selected reference")
 
-            path_buttons_layout.addWidget(browse_button)
-            path_buttons_layout.addWidget(reference_path_button)
-            filename_layout.addLayout(path_buttons_layout)
+            filename_input_layout.addWidget(browse_button)
+            filename_input_layout.addWidget(reference_path_button)
 
-            # Add to form layout
-            file_layout.addRow("Filename:", filename_layout)
+            filename_layout.addLayout(filename_input_layout)
+            file_layout.addWidget(filename_section)
 
-            # Add save location display label with path visualization
+            # Add save location display with folder open button - NEW FEATURE
+            save_location_section = QWidget()
+            save_location_layout = QVBoxLayout(save_location_section)
+            save_location_layout.setContentsMargins(0, 0, 0, 0)
+            save_location_layout.setSpacing(5)
+
+            save_location_label = QLabel("Save Location:")
+            save_location_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            save_location_layout.addWidget(save_location_label)
+
+            save_location_display_layout = QHBoxLayout()
+            save_location_display_layout.setSpacing(6)
+
+            # Create a QFrame with horizontal layout to contain the path text and folder button
+            save_path_frame = QFrame()
+            save_path_frame.setFrameShape(QFrame.StyledPanel)
+            save_path_frame.setFrameShadow(QFrame.Sunken)
+            save_path_frame.setStyleSheet("background-color: #3A3A3A; padding: 6px; border-radius: 4px;")
+            save_path_layout = QHBoxLayout(save_path_frame)
+            save_path_layout.setContentsMargins(6, 2, 6, 2)
+            save_path_layout.setSpacing(3)
+
             self.save_location_label = QLabel()
-            self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
-            file_layout.addRow("Save Location:", self.save_location_label)
+            self.save_location_label.setStyleSheet("color: #0066CC; background-color: transparent; padding: 0;")
+            save_path_layout.addWidget(self.save_location_label, 1)  # Give label stretch priority
 
-            # Add version preview
-            version_preview_layout = QHBoxLayout()
+            # Add folder open button that opens the current directory
+            folder_open_button = QPushButton()
+            folder_open_button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))  # Changed icon to be more visible
+            folder_open_button.setToolTip("Open folder in file explorer")
+            folder_open_button.setFixedSize(24, 24)  # Set fixed size to ensure consistent appearance
+            folder_open_button.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent; 
+                    border: none;
+                    border-radius: 3px;
+                    padding: 3px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+            """)  # Enhanced styling with hover effects
+
+            # Make sure to correctly connect to the open_current_directory method
+            folder_open_button.clicked.connect(self.open_current_directory)
+            print("Folder button connected to open_current_directory method")  # Debug print
+            save_path_layout.addWidget(folder_open_button)
+
+            save_location_display_layout.addWidget(save_path_frame)
+
+            # Add project reset button with improved styling
+            self.reset_project_button = QPushButton()
+            self.reset_project_button.setIcon(self.style().standardIcon(QStyle.SP_DialogResetButton))
+            self.reset_project_button.setToolTip("Reset Project Display")
+            self.reset_project_button.clicked.connect(self.direct_reset_project_display)
+            self.reset_project_button.setStyleSheet("padding: 6px;")
+            save_location_display_layout.addWidget(self.reset_project_button)
+
+            save_location_layout.addLayout(save_location_display_layout)
+            file_layout.addWidget(save_location_section)
+
+            # Add version preview with improved styling
+            version_preview_section = QWidget()
+            version_preview_layout = QVBoxLayout(version_preview_section)
+            version_preview_layout.setContentsMargins(0, 0, 0, 0)
+            version_preview_layout.setSpacing(5)
+
             version_preview_label = QLabel("Next version:")
-            version_preview_label.setStyleSheet("color: #666666; font-size: 11px;")
+            version_preview_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            version_preview_layout.addWidget(version_preview_label)
+
+            version_preview_display = QHBoxLayout()
+            version_preview_display.setSpacing(6)
 
             self.version_preview_icon = QLabel("→")
-            self.version_preview_icon.setStyleSheet("color: #0066CC; font-weight: bold;")
+            self.version_preview_icon.setStyleSheet("color: #0066CC; font-weight: bold; font-size: 14px;")
 
             self.version_preview_text = QLabel("N/A")
             self.version_preview_text.setStyleSheet("color: #0066CC; font-weight: bold;")
 
-            version_preview_layout.addWidget(version_preview_label)
-            version_preview_layout.addWidget(self.version_preview_icon)
-            version_preview_layout.addWidget(self.version_preview_text)
-            version_preview_layout.addStretch()
+            version_preview_display.addWidget(self.version_preview_icon)
+            version_preview_display.addWidget(self.version_preview_text)
+            version_preview_display.addStretch()
 
-            file_layout.addRow("", version_preview_layout)
+            version_preview_layout.addLayout(version_preview_display)
+            file_layout.addWidget(version_preview_section)
 
-            # Add file type selection
+            # Add file type selector with improved styling
+            file_type_section = QWidget()
+            file_type_layout = QVBoxLayout(file_type_section)
+            file_type_layout.setContentsMargins(0, 0, 0, 0)
+            file_type_layout.setSpacing(5)
+
+            file_type_label = QLabel("File Type:")
+            file_type_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            file_type_layout.addWidget(file_type_label)
+
             self.filetype_combo = QComboBox()
             self.filetype_combo.addItems(["Maya ASCII (.ma)", "Maya Binary (.mb)"])
             self.filetype_combo.setFixedWidth(180)
+            self.filetype_combo.setStyleSheet("padding: 6px;")
             self.filetype_combo.currentIndexChanged.connect(self.update_filename_preview)
             self.filetype_combo.currentIndexChanged.connect(self.update_version_preview)
-            
+            file_type_layout.addWidget(self.filetype_combo)
+            file_layout.addWidget(file_type_section)
+
+            # Add checkboxes with improved styling
+            checkbox_section = QWidget()
+            checkbox_layout = QVBoxLayout(checkbox_section)
+            checkbox_layout.setContentsMargins(0, 0, 0, 0)
+            checkbox_layout.setSpacing(8)
+
             # Add option to use the current directory
             self.use_current_dir = QCheckBox("Use current directory")
             self.use_current_dir.setChecked(True)
+            self.use_current_dir.setStyleSheet("padding: 2px;")
+            self.use_current_dir.toggled.connect(self.update_save_location_display)
+            checkbox_layout.addWidget(self.use_current_dir)
 
             # Add option to respect project structure
             self.respect_project_structure = QCheckBox("Respect Maya project structure")
             self.respect_project_structure.setChecked(self.load_option_var(self.OPT_VAR_RESPECT_PROJECT, True))
             self.respect_project_structure.setToolTip("Save files in Maya project structure when active")
+            self.respect_project_structure.setStyleSheet("padding: 2px;")
             self.respect_project_structure.stateChanged.connect(self.update_save_location_display)
+            checkbox_layout.addWidget(self.respect_project_structure)
+
+            file_layout.addWidget(checkbox_section)
 
             # Project status indicator
+            project_status_section = QWidget()
+            project_status_layout = QVBoxLayout(project_status_section)
+            project_status_layout.setContentsMargins(0, 5, 0, 0)
+            project_status_layout.setSpacing(5)
+
+            project_label = QLabel("Project:")
+            project_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            project_status_layout.addWidget(project_label)
+
             self.project_status_label = QLabel("Project: Not detected")
-            self.project_status_label.setStyleSheet("color: #666666; font-size: 10px;")
-            
-            project_reset_layout = QHBoxLayout()
-            self.reset_project_button = QPushButton("Reset Project Display")
-            self.reset_project_button.clicked.connect(self.direct_reset_project_display)
-            self.reset_project_button.setToolTip("Manually reset the project display for new files")
-            self.reset_project_button.setFixedWidth(150)
-            project_reset_layout.addWidget(self.reset_project_button)
-            project_reset_layout.addStretch()
+            self.project_status_label.setStyleSheet("color: #666666; padding: 4px;")
+            project_status_layout.addWidget(self.project_status_label)
 
-            # Add this to your form layout, after the project_status_label row:
-            file_layout.addRow("", project_reset_layout)
+            file_layout.addWidget(project_status_section)
 
-            # Create layout for save reminder controls
+            # Create layout for save reminder controls with improved styling
+            reminder_section = QWidget()
+            reminder_layout = QVBoxLayout(reminder_section)
+            reminder_layout.setContentsMargins(0, 5, 0, 0)
+            reminder_layout.setSpacing(5)
+
+            reminder_label = QLabel("Reminders:")
+            reminder_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            reminder_layout.addWidget(reminder_label)
+
             save_reminder_layout = QHBoxLayout()
             save_reminder_layout.setContentsMargins(0, 0, 0, 0)
+            save_reminder_layout.setSpacing(8)
 
             # Add timed save reminder checkbox with updated label
             self.enable_timed_warning = QCheckBox("Enable save reminder every")
             self.enable_timed_warning.setChecked(False)  # Explicitly set to False by default
             self.enable_timed_warning.stateChanged.connect(self.toggle_timed_warning)
+            self.enable_timed_warning.setStyleSheet("padding: 2px;")
             save_reminder_layout.addWidget(self.enable_timed_warning)
 
             # Add spinner for reminder interval
@@ -396,21 +504,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.reminder_interval_spinbox.setValue(15)  # Default to 15 minutes
             self.reminder_interval_spinbox.setSuffix(" minutes")
             self.reminder_interval_spinbox.setFixedWidth(100)
+            self.reminder_interval_spinbox.setStyleSheet("padding: 4px;")
             self.reminder_interval_spinbox.valueChanged.connect(self.update_reminder_interval)
             save_reminder_layout.addWidget(self.reminder_interval_spinbox)
-            
+            save_reminder_layout.addStretch()
+
+            reminder_layout.addLayout(save_reminder_layout)
+
             # Add version notes option
             self.add_version_notes = QCheckBox("Add version notes when saving")
             self.add_version_notes.setChecked(self.load_option_var(self.OPT_VAR_ADD_VERSION_NOTES, False))
             self.add_version_notes.setToolTip("Add notes for each version to track changes")
-            
-            # Add to form layout
-            file_layout.addRow("File Type:", self.filetype_combo)
-            file_layout.addRow("", self.use_current_dir)
-            file_layout.addRow("", self.respect_project_structure)  # Add this line
-            file_layout.addRow("Project:", self.project_status_label)  # Add this line
-            file_layout.addRow("", save_reminder_layout)
-            file_layout.addRow("", self.add_version_notes)
+            self.add_version_notes.setStyleSheet("padding: 2px;")
+            reminder_layout.addWidget(self.add_version_notes)
+
+            file_layout.addWidget(reminder_section)
             
             self.file_options_section.add_widget(file_options)
             self.container_layout.addWidget(self.file_options_section)
@@ -2505,6 +2613,40 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         # Ultimate fallback - Maya's default scenes directory
         workspace = cmds.workspace(query=True, directory=True)
         return os.path.join(workspace, "scenes")
+
+    def open_current_directory(self):
+        """Open the current save directory in the system file explorer"""
+        print("open_current_directory method called!")  # Debug line to confirm method execution
+        
+        try:
+            # Get the current save directory
+            save_dir = self.get_save_directory()
+            print(f"Attempting to open directory: {save_dir}")  # Debug line to show the path
+            
+            if not os.path.exists(save_dir):
+                print(f"Directory does not exist: {save_dir}")
+                self.status_bar.showMessage(f"Directory not found: {save_dir}", 5000)
+                return
+                    
+            # Open directory using the appropriate command for the OS
+            if sys.platform == 'win32':
+                subprocess.Popen(['explorer', save_dir])
+            elif sys.platform == 'darwin':  # macOS
+                subprocess.Popen(['open', save_dir])
+            else:  # Linux
+                subprocess.Popen(['xdg-open', save_dir])
+                    
+            print(f"Successfully opened directory: {save_dir}")
+            self.status_bar.showMessage(f"Opened folder: {save_dir}", 3000)
+            
+        except Exception as e:
+            error_message = f"Error opening directory: {e}"
+            print(error_message)
+            traceback.print_exc()  # Print detailed error information
+            
+            # Show error in the status bar if available
+            if hasattr(self, 'status_bar'):
+                self.status_bar.showMessage(error_message, 5000)
 
     def setup_file_monitoring(self):
         """Set up monitoring for file open and new scene events"""
