@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +18,7 @@
             --danger-color: #F44336;
             --text-color: #444;
             --border-radius: 4px;
-            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             --transition: all 0.3s ease;
         }
 
@@ -127,6 +128,43 @@
             margin: 0 auto;
         }
 
+        /* Quick Navigation */
+        .quick-nav {
+            background-color: white;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .quick-nav h3 {
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+            text-align: center;
+        }
+
+        .quick-nav ul {
+            display: flex;
+            list-style: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .quick-nav a {
+            text-decoration: none;
+            color: var(--primary-color);
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            background-color: rgba(41, 128, 185, 0.1);
+            transition: var(--transition);
+        }
+
+        .quick-nav a:hover {
+            background-color: rgba(41, 128, 185, 0.2);
+            transform: translateY(-2px);
+        }
+
         /* Changelog Section */
         .changelog-section {
             padding: 4rem 0;
@@ -195,6 +233,10 @@
             background-color: var(--success-color);
         }
 
+        .version-dot.milestone {
+            background-color: var(--accent-color);
+        }
+
         .version-info {
             flex: 1;
         }
@@ -236,6 +278,11 @@
 
         .version-badge.latest {
             background-color: var(--accent-color);
+        }
+
+        .version-badge.milestone {
+            background-color: var(--warning-color);
+            border: 1px solid #e3a008;
         }
 
         .version-meta {
@@ -280,13 +327,48 @@
         .change-category li:last-child {
             margin-bottom: 0;
         }
-        
+
         .highlight {
             background-color: rgba(52, 152, 219, 0.1);
             padding: 0.25rem 0.5rem;
             border-radius: 3px;
             font-family: 'Courier New', Courier, monospace;
             color: var(--primary-color);
+        }
+
+        .download-links {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .download-button {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .download-button:hover {
+            background-color: #2471a3;
+            transform: translateY(-2px);
+        }
+
+        .migration-notes {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: rgba(243, 156, 18, 0.1);
+            border-left: 4px solid var(--accent-color);
+            border-radius: var(--border-radius);
+        }
+
+        .migration-notes h5 {
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
         }
 
         /* Footer */
@@ -374,6 +456,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header>
@@ -385,7 +468,7 @@
                     </div>
                     <div>
                         <span class="logo-text">SavePlus</span>
-                        <span class="logo-version">v1.2.0</span>
+                        <span class="logo-version">v1.2.1</span>
                     </div>
                 </a>
                 <nav>
@@ -412,27 +495,100 @@
     <!-- Changelog Section -->
     <section class="changelog-section">
         <div class="container">
+            <!-- Quick Navigation -->
+            <div class="quick-nav">
+                <h3>Jump to Version</h3>
+                <ul>
+                    <li><a href="#v1.2.1">v1.2.1 (Latest)</a></li>
+                    <li><a href="#v1.2.0">v1.2.0</a></li>
+                    <li><a href="#original">Original MEL Script</a></li>
+                </ul>
+            </div>
+
             <div class="changelog-container">
                 <h2>Version History</h2>
-                
-                <!-- In the Version 1.2.0 section -->
-                <div class="version-entry">
+
+                <!-- Version 1.2.1 -->
+                <div id="v1.2.1" class="version-entry">
                     <div class="version-header">
                         <div class="version-dot latest">
                             <i class="fas fa-star"></i>
                         </div>
                         <div class="version-info">
                             <div class="version-title">
-                                <h3>Version 1.2.0</h3>
-                                <!-- Change from "minor" to "major" release -->
-                                <span class="version-badge major">Major Release</span>
+                                <h3>Version 1.2.1</h3>
+                                <span class="version-badge patch">Patch Release</span>
                                 <span class="version-badge latest">Latest</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: April 1, 2025</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a
+                                        href="https://github.com/dshepstone/saveplus/releases/tag/v1.2.1"
+                                        target="_blank">GitHub
+                                        Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-wrench"></i> Improvements</h4>
+                            <ul>
+                                <li>Enhanced icon installation system that dynamically locates and installs the SavePlus
+                                    tool icon</li>
+                                <li>Improved shelf button creation with better icon handling across different Maya
+                                    environments</li>
+                                <li>More robust path detection for icon files during installation</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-bug"></i> Bug Fixes</h4>
+                            <ul>
+                                <li>Fixed issue where the tool icon might not appear correctly on the Maya shelf in
+                                    certain environments</li>
+                                <li>Resolved path handling inconsistencies during installation on different operating
+                                    systems</li>
+                                <li>Addressed rare cases where the installer couldn't locate the icon file</li>
+                            </ul>
+                        </div>
+                        <div class="download-links">
+                            <a href="https://github.com/dshepstone/saveplus/releases/download/v1.2.1/SavePlus_v1.2.1.zip"
+                                class="download-button">
+                                <i class="fas fa-download"></i> Download ZIP
+                            </a>
+                            <a href="https://github.com/dshepstone/saveplus/archive/refs/tags/v1.2.1.tar.gz"
+                                class="download-button">
+                                <i class="fas fa-file-archive"></i> Download TAR.GZ
+                            </a>
+                        </div>
+                        <div class="migration-notes">
+                            <h5><i class="fas fa-exchange-alt"></i> Migration from v1.2.0</h5>
+                            <p>This update focuses on improving the installation process. If you're upgrading from
+                                v1.2.0, simply install the new version using the same method as before. The improved
+                                icon handling will automatically take effect, and no changes to your workflow or
+                                configuration are needed.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Version 1.2.0 -->
+                <div id="v1.2.0" class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot milestone">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
+                                <h3>Version 1.2.0</h3>
+                                <span class="version-badge minor">Minor Release</span>
+                                <span class="version-badge milestone">Milestone</span>
                             </div>
                             <div class="version-meta">
                                 <span><i class="far fa-calendar-alt"></i> Released: March 15, 2025</span>
                                 <span> | </span>
                                 <span><i class="fas fa-code-branch"></i> <a
-                                        href="https://github.com/dshepstone/saveplus/releases/tag/v1.2.0" target="_blank">GitHub
+                                        href="https://github.com/dshepstone/saveplus/releases/tag/v1.2.0"
+                                        target="_blank">GitHub
                                         Release</a></span>
                             </div>
                         </div>
@@ -441,10 +597,12 @@
                         <div class="change-category">
                             <h4><i class="fas fa-plus-circle"></i> New Features</h4>
                             <ul>
-                                <li>Added customizable pipeline stages in Name Generator for improved workflow integration</li>
+                                <li>Added customizable pipeline stages in Name Generator for improved workflow
+                                    integration</li>
                                 <li>Implemented Version Notes system to document changes with each save</li>
                                 <li>Added Quick Note feature for faster documentation</li>
-                                <li>Added ability to extract paths from referenced files with the new Reference Path button</li>
+                                <li>Added ability to extract paths from referenced files with the new Reference Path
+                                    button</li>
                             </ul>
                         </div>
                         <div class="change-category">
@@ -466,13 +624,28 @@
                                 <li>Corrected handling of special characters in filenames</li>
                             </ul>
                         </div>
+                        <div class="download-links">
+                            <a href="https://github.com/dshepstone/saveplus/releases/download/v1.2.0/SavePlus_v1.2.0.zip"
+                                class="download-button">
+                                <i class="fas fa-download"></i> Download ZIP
+                            </a>
+                            <a href="https://github.com/dshepstone/saveplus/archive/refs/tags/v1.2.0.tar.gz"
+                                class="download-button">
+                                <i class="fas fa-file-archive"></i> Download TAR.GZ
+                            </a>
+                        </div>
+                        <div class="migration-notes">
+                            <h5><i class="fas fa-exchange-alt"></i> Migration Notes</h5>
+                            <p>This release introduces significant workflow improvements with Version Notes and enhanced
+                                pipeline integration. After installing, review the new pipeline stages in the Name
+                                Generator to align with your specific workflow. The Version Notes system is optional and
+                                can be enabled in the UI preferences.</p>
+                        </div>
                     </div>
                 </div>
-                  
-                
-                <!-- Legacy Info -->
-                <!-- Legacy Info -->
-                <div class="version-entry">
+
+                <!-- Original MEL Script -->
+                <div id="original" class="version-entry">
                     <div class="version-header">
                         <div class="version-dot">
                             <i class="fas fa-history"></i>
@@ -489,19 +662,29 @@
                     <div class="version-content">
                         <div class="change-category">
                             <h4><i class="fas fa-info-circle"></i> About</h4>
-                            <p>SavePlus was originally developed as a MEL script by Neal Singleton and released on Highend3D. The
-                                original script provided intelligent file versioning for Maya, automatically incrementing version
+                            <p>SavePlus was originally developed as a MEL script by Neal Singleton and released on
+                                Highend3D. The
+                                original script provided intelligent file versioning for Maya, automatically
+                                incrementing version
                                 numbers while preserving naming patterns.</p>
-                            <p>The MEL script gained popularity in the Maya community for its ability to handle complex naming
-                                conventions and its simple workflow integration. It addressed a common pain point for 3D artists who
+                            <p>The MEL script gained popularity in the Maya community for its ability to handle complex
+                                naming
+                                conventions and its simple workflow integration. It addressed a common pain point for 3D
+                                artists who
                                 needed better file versioning than Maya's native tools provided.</p>
-                            <p>In 2024, we began the process of modernizing and expanding the tool by porting it to Python and enhancing
-                                its capabilities for Maya 2025. The current implementation adds a modern UI, version history tracking,
-                                backup systems, and many other features while maintaining the original script's core versioning
+                            <p>In 2024, we began the process of modernizing and expanding the tool by porting it to
+                                Python and enhancing
+                                its capabilities for Maya 2025. The current implementation adds a modern UI, version
+                                history tracking,
+                                backup systems, and many other features while maintaining the original script's core
+                                versioning
                                 intelligence.</p>
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Footer -->
     <footer>
@@ -528,15 +711,17 @@
                     <ul>
                         <li><a href="documentation.html#installation">Installation Guide</a></li>
                         <li><a href="documentation.html#faq">FAQ</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus" target="_blank">GitHub Repository</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus/issues" target="_blank">Report Issues</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Report Issues</a>
+                        </li>
                     </ul>
                 </div>
                 <div class="footer-links">
                     <h3>Contact</h3>
                     <ul>
-                        <li><a href="mailto:contact@example.com">Email Support</a></li>
-                        <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">Community Forum</a></li>
+                        <li><a href="mailto:support@saveplus.example.com">Email Support</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/discussions" target="_blank">Community
+                                Forum</a></li>
                     </ul>
                 </div>
             </div>
@@ -546,4 +731,5 @@
         </div>
     </footer>
 </body>
+
 </html>
