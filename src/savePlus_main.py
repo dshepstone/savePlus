@@ -7,6 +7,7 @@ import time
 import re
 import traceback
 import subprocess
+import sys
 
 from maya import cmds, mel
 from maya import cmds, mel
@@ -99,6 +100,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.setMinimumWidth(550)
             self.setMinimumHeight(450)
             
+            # Set application-wide tooltip style
+            self.setStyleSheet("""
+                QToolTip {
+                    background-color: #2A2A2A;
+                    color: white;
+                    border: 1px solid #3A3A3A;
+                    border-radius: 3px;
+                    padding: 3px;
+                    font-size: 11px;
+                }
+            """)
+
             # Flag to control auto-resize behavior
             self.auto_resize_enabled = True
             
@@ -357,28 +370,30 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Add folder open button that opens the current directory
             folder_open_button = QPushButton()
-            folder_open_button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))  # Changed icon to be more visible
+            folder_open_button.setIcon(self.style().standardIcon(QStyle.SP_DirOpenIcon))
             folder_open_button.setToolTip("Open folder in file explorer")
-            folder_open_button.setFixedSize(24, 24)  # Set fixed size to ensure consistent appearance
+            folder_open_button.setFixedSize(28, 28)  # Slightly larger button for better clickability
             folder_open_button.setStyleSheet("""
                 QPushButton {
-                    background-color: transparent; 
-                    border: none;
-                    border-radius: 3px;
-                    padding: 3px;
+                    background-color: rgba(60, 60, 60, 0.5); 
+                    border: 1px solid rgba(80, 80, 80, 0.5);
+                    border-radius: 4px;
+                    padding: 2px;
                 }
                 QPushButton:hover {
-                    background-color: rgba(255, 255, 255, 0.1);
+                    background-color: rgba(80, 80, 80, 0.8);
+                    border: 1px solid rgba(100, 100, 100, 0.8);
                 }
                 QPushButton:pressed {
-                    background-color: rgba(255, 255, 255, 0.2);
+                    background-color: rgba(100, 100, 100, 1.0);
                 }
-            """)  # Enhanced styling with hover effects
+            """)
 
-            # Make sure to correctly connect to the open_current_directory method
-            folder_open_button.clicked.connect(self.open_current_directory)
-            print("Folder button connected to open_current_directory method")  # Debug print
+            # Explicitly create a lambda function for the connection
+            folder_open_button.clicked.connect(lambda: self.open_current_directory())
             save_path_layout.addWidget(folder_open_button)
+            # Add explicit debug print after connecting
+            print("Folder button created and connected to open_current_directory method")
 
             save_location_display_layout.addWidget(save_path_frame)
 
@@ -2616,12 +2631,19 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
     def open_current_directory(self):
         """Open the current save directory in the system file explorer"""
-        print("open_current_directory method called!")  # Debug line to confirm method execution
+        import sys
+        import os
+        import subprocess
+        import traceback
+
+        print("\n" + "="*50)
+        print("FOLDER OPEN BUTTON CLICKED!")
+        print("="*50)
         
         try:
             # Get the current save directory
             save_dir = self.get_save_directory()
-            print(f"Attempting to open directory: {save_dir}")  # Debug line to show the path
+            print(f"Attempting to open directory: {save_dir}")
             
             if not os.path.exists(save_dir):
                 print(f"Directory does not exist: {save_dir}")
@@ -2630,10 +2652,35 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                     
             # Open directory using the appropriate command for the OS
             if sys.platform == 'win32':
-                subprocess.Popen(['explorer', save_dir])
+                print(f"Using Windows explorer command for path: {save_dir}")
+                
+                # Method 1: Use os.startfile which properly handles paths with spaces
+                try:
+                    os.startfile(save_dir)
+                    print(f"Opened directory using os.startfile")
+                except Exception as startfile_error:
+                    print(f"os.startfile failed: {startfile_error}")
+                    
+                    # Method 2: Ensure the path is properly quoted for Windows Explorer
+                    try:
+                        # Normalize path to use backslashes for Windows
+                        win_path = os.path.normpath(save_dir)
+                        # Use string with quotes around the path
+                        subprocess.Popen(f'explorer "{win_path}"', shell=True)
+                        print(f"Opened directory using shell=True with quoted path")
+                    except Exception as shell_error:
+                        print(f"Shell command failed: {shell_error}")
+                        
+                        # Method 3: Last resort - pass as a list but with proper formatting
+                        normalized_path = save_dir.replace('/', '\\')
+                        subprocess.Popen(['explorer', normalized_path])
+                        print(f"Tried last resort method")
+                    
             elif sys.platform == 'darwin':  # macOS
+                print(f"Using macOS open command for path: {save_dir}")
                 subprocess.Popen(['open', save_dir])
             else:  # Linux
+                print(f"Using Linux xdg-open command for path: {save_dir}")
                 subprocess.Popen(['xdg-open', save_dir])
                     
             print(f"Successfully opened directory: {save_dir}")
