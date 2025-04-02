@@ -2507,7 +2507,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
     def get_save_directory(self):
         """Determine the appropriate directory for saving files based on settings"""
-        # Current file's directory takes precedence when "Use current directory" is checked
+        # IMPORTANT: Check for project structure respect first
+        if hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked() and self.project_directory:
+            # Always use project's scenes directory when this option is enabled
+            scenes_dir = os.path.join(self.project_directory, "scenes")
+            if not os.path.exists(scenes_dir):
+                try:
+                    os.makedirs(scenes_dir)
+                except Exception as e:
+                    print(f"[SavePlus Debug] Could not create scenes directory: {e}")
+            return scenes_dir
+        
+        # Then handle other cases
         current_file_path = cmds.file(query=True, sceneName=True)
         
         if current_file_path and self.use_current_dir.isChecked():
@@ -2517,16 +2528,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         if self.selected_directory:
             # Use explicitly selected directory
             return self.selected_directory
-        
-        if self.project_directory and hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked():
-            # Use Maya project's scenes directory
-            scenes_dir = os.path.join(self.project_directory, "scenes")
-            if not os.path.exists(scenes_dir):
-                try:
-                    os.makedirs(scenes_dir)
-                except Exception as e:
-                    print(f"[SavePlus Debug] Could not create scenes directory: {e}")
-            return scenes_dir
         
         if current_file_path:
             # Fallback to current file's directory
