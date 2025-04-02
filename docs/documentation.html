@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,7 +18,7 @@
             --danger-color: #F44336;
             --text-color: #444;
             --border-radius: 4px;
-            --box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            --box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             --transition: all 0.3s ease;
         }
 
@@ -197,7 +198,8 @@
             margin-bottom: 1rem;
         }
 
-        .content ul, .content ol {
+        .content ul,
+        .content ol {
             margin-bottom: 1.5rem;
             padding-left: 2rem;
         }
@@ -281,6 +283,18 @@
             border-radius: var(--border-radius);
         }
 
+        /* New Version Badge */
+        .version-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            background-color: var(--success-color);
+            color: white;
+            border-radius: 1rem;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
         /* Footer */
         footer {
             background-color: var(--dark-color);
@@ -357,7 +371,8 @@
             color: white;
         }
 
-        th, td {
+        th,
+        td {
             padding: 0.75rem;
             text-align: left;
             border: 1px solid #ddd;
@@ -409,6 +424,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Header -->
     <header>
@@ -420,7 +436,7 @@
                     </div>
                     <div>
                         <span class="logo-text">SavePlus</span>
-                        <span class="logo-version">v1.2.0</span>
+                        <span class="logo-version">v1.2.1</span>
                     </div>
                 </a>
                 <nav>
@@ -468,10 +484,13 @@
         <div class="content">
             <section id="introduction">
                 <h2>Introduction to SavePlus</h2>
-                <p>SavePlus is a comprehensive file management and versioning tool designed specifically for Maya artists. Developed to address the common challenges of file versioning, backup management, and consistent naming conventions, SavePlus streamlines your workflow and helps prevent data loss.</p>
-                
-                <p>Building upon the original MEL script by Neal Singleton, the SavePlus Team has created a modern Python-based tool with an intuitive interface that integrates seamlessly with Maya 2025.</p>
-                
+                <p>SavePlus is a comprehensive file management and versioning tool designed specifically for Maya
+                    artists. Developed to address the common challenges of file versioning, backup management, and
+                    consistent naming conventions, SavePlus streamlines your workflow and helps prevent data loss.</p>
+
+                <p>Building upon the original MEL script by Neal Singleton, the SavePlus Team has created a modern
+                    Python-based tool with an intuitive interface that integrates seamlessly with Maya 2025.</p>
+
                 <div class="feature-card">
                     <h4>Key Benefits</h4>
                     <ul>
@@ -487,16 +506,16 @@
 
             <section id="installation">
                 <h2>Installation</h2>
-                
+
                 <h3>System Requirements</h3>
                 <ul>
                     <li>Maya 2025</li>
                     <li>Windows, macOS, or Linux operating system</li>
                 </ul>
-                
+
                 <h3>Installation Methods</h3>
-                
-                <h4>Method 1: Quick Install (Recommended)</h4>
+
+                <h4>Method 1: Quick Install (Recommended) <span class="version-badge">Updated in v1.2.1</span></h4>
                 <ol>
                     <li>Download the SavePlus ZIP package from the <a href="download.html">download page</a></li>
                     <li>Extract the contents to a temporary location</li>
@@ -505,49 +524,70 @@
                     <li>When prompted, click "Install" to create a shelf button</li>
                     <li>A confirmation message will appear when installation is complete</li>
                 </ol>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> The MEL installer automatically creates a convenient SavePlus button on your current Maya
-                        shelf, allowing you to launch the tool with a single click.</p>
+                    <p><strong>Tip:</strong> The v1.2.1 installer includes improved icon detection technology that
+                        automatically locates and configures the SavePlus icon for your Maya shelf. This ensures proper
+                        visual integration regardless of your operating system or Maya configuration.</p>
                 </div>
-                
+
                 <h4>Method 2: Manual Installation</h4>
                 <ol>
                     <li>Download the SavePlus ZIP package from the <a href="download.html">download page</a></li>
-                    <li>Extract the contents to your Maya scripts directory:
+                    <li>Extract the following files:
+                        <ul>
+                            <li><code>__init__.py</code></li>
+                            <li><code>savePlus_core.py</code></li>
+                            <li><code>savePlus_ui_components.py</code></li>
+                            <li><code>savePlus_main.py</code></li>
+                            <li><code>savePlus_launcher.py</code></li>
+                            <li><code>saveplus.png</code> (icon file)</li>
+                        </ul>
+                    </li>
+                    <li>Copy the Python files to your Maya scripts directory:
                         <ul>
                             <li>Windows: <code>C:/Users/[username]/Documents/maya/scripts</code></li>
                             <li>macOS: <code>/Users/[username]/Library/Preferences/Autodesk/maya/scripts</code></li>
                             <li>Linux: <code>/home/[username]/maya/scripts</code></li>
                         </ul>
                     </li>
-                    <li>Launch Maya and run the following MEL code in the Script Editor to create a shelf button:
-                        <pre><code>source "install_saveplus.mel";</code></pre>
+                    <li>Copy the icon file to your Maya icons directory:
+                        <ul>
+                            <li>Windows: <code>C:/Users/[username]/Documents/maya/prefs/icons</code></li>
+                            <li>macOS: <code>/Users/[username]/Library/Preferences/Autodesk/maya/prefs/icons</code></li>
+                            <li>Linux: <code>/home/[username]/maya/prefs/icons</code></li>
+                        </ul>
+                    </li>
+                    <li>Launch Maya and run the following Python code in the Script Editor to create a shelf button:
+                        <pre><code>import savePlus_launcher
+savePlus_launcher.install_shelf_button()</code></pre>
                     </li>
                 </ol>
-                
+
                 <div class="note">
-                    <p><strong>Note:</strong> After installation, you can launch SavePlus by clicking the shelf button or by running
-                        <code>import savePlus_launcher; savePlus_launcher.launch_save_plus()</code> in Maya's Script Editor.</p>
+                    <p><strong>Note:</strong> With v1.2.1, even if you place the icon file in a non-standard location,
+                        the improved shelf button creation will attempt to find it automatically. This makes manual
+                        installation more forgiving if icon placement isn't perfect.</p>
                 </div>
-                
+
                 <h3>Verifying Installation</h3>
                 <p>To verify that SavePlus has been installed correctly:</p>
                 <ol>
-                    <li>Look for the SavePlus button on your Maya shelf (it uses the standard "incrementalSave" icon)</li>
+                    <li>Look for the SavePlus button on your Maya shelf (it should display the SavePlus icon)</li>
                     <li>Click the button to launch the SavePlus interface</li>
                     <li>If the interface loads without errors, the installation was successful</li>
                 </ol>
-                
+
                 <div class="warning">
                     <p><strong>Note:</strong> If you encounter any issues during installation, please refer to the <a
-                            href="#common-issues">Common Issues</a> section or contact <a href="#support">support</a>.</p>
+                            href="#common-issues">Common Issues</a> section or contact <a href="#support">support</a>.
+                    </p>
                 </div>
-                </section>
+            </section>
 
             <section id="getting-started">
                 <h2>Getting Started</h2>
-                
+
                 <h3>Launching SavePlus</h3>
                 <p>There are several ways to launch SavePlus in Maya:</p>
                 <ul>
@@ -556,30 +596,32 @@
                         <pre><code>import savePlus_launcher
 savePlus_launcher.launch_save_plus()</code></pre>
                     </li>
-                    <li><strong>Custom Hotkey:</strong> Assign a hotkey to the Python command above for rapid access</li>
+                    <li><strong>Custom Hotkey:</strong> Assign a hotkey to the Python command above for rapid access
+                    </li>
                 </ul>
-                
+
                 <h3>Interface Overview</h3>
                 <p>The SavePlus interface is organized into three main tabs:</p>
-                
+
                 <h4>1. SavePlus Tab</h4>
                 <p>The primary tab contains all essential saving functionality:</p>
                 <ul>
-                    <li><strong>Save Buttons:</strong> Quick access to SavePlus, Save As New, and Create Backup functions</li>
+                    <li><strong>Save Buttons:</strong> Quick access to SavePlus, Save As New, and Create Backup
+                        functions</li>
                     <li><strong>Last Save Indicator:</strong> Visual indicator showing time since last save</li>
                     <li><strong>File Options:</strong> Controls for filename, save location, and file type</li>
                     <li><strong>Name Generator:</strong> Tools to create standardized filenames</li>
                     <li><strong>Quick Notes:</strong> Add contextual notes to saves</li>
                     <li><strong>Log Output:</strong> View detailed information about save operations</li>
                 </ul>
-                
+
                 <h4>2. History Tab</h4>
                 <p>Provides access to file history and version tracking:</p>
                 <ul>
                     <li><strong>Recent Files:</strong> List of recently saved files</li>
                     <li><strong>Version History:</strong> Detailed history of versions for the current file</li>
                 </ul>
-                
+
                 <h4>3. Preferences Tab</h4>
                 <p>Configure SavePlus settings:</p>
                 <ul>
@@ -587,17 +629,19 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li><strong>Path Settings:</strong> Default save locations and project directories</li>
                     <li><strong>UI Settings:</strong> Interface display preferences</li>
                 </ul>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> Hover over buttons and fields in the SavePlus interface to see helpful tooltips explaining their functionality.</p>
+                    <p><strong>Tip:</strong> Hover over buttons and fields in the SavePlus interface to see helpful
+                        tooltips explaining their functionality.</p>
                 </div>
             </section>
 
             <section id="save-plus">
                 <h2>Save Plus</h2>
-                
-                <p>The core function of SavePlus is intelligent file versioning, which allows you to increment your saves automatically while maintaining file naming patterns.</p>
-                
+
+                <p>The core function of SavePlus is intelligent file versioning, which allows you to increment your
+                    saves automatically while maintaining file naming patterns.</p>
+
                 <h3>How It Works</h3>
                 <p>When you click the "Save Plus" button or use the keyboard shortcut (Ctrl+S), SavePlus will:</p>
                 <ol>
@@ -607,10 +651,10 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Save the file with the new incremented name</li>
                     <li>Add the new version to the version history</li>
                 </ol>
-                
+
                 <h3>Versioning Logic</h3>
                 <p>SavePlus uses sophisticated pattern recognition to handle various filename formats:</p>
-                
+
                 <table>
                     <thead>
                         <tr>
@@ -647,28 +691,33 @@ savePlus_launcher.launch_save_plus()</code></pre>
                         </tr>
                     </tbody>
                 </table>
-                
+
                 <h3>Project Identifier Recognition</h3>
                 <p>SavePlus has specialized handling for common project identifier patterns:</p>
                 <ul>
-                    <li><strong>Class Assignments:</strong> Recognizes patterns like "A01_" (assignment letter + number)</li>
+                    <li><strong>Class Assignments:</strong> Recognizes patterns like "A01_" (assignment letter + number)
+                    </li>
                     <li><strong>Production Jobs:</strong> Recognizes patterns like "J02_" (job identifier)</li>
-                    <li><strong>Studio Conventions:</strong> Preserves naming standards specific to studio pipelines</li>
+                    <li><strong>Studio Conventions:</strong> Preserves naming standards specific to studio pipelines
+                    </li>
                 </ul>
-                
+
                 <div class="note">
-                    <p><strong>Note:</strong> SavePlus can be run on unsaved scenes, but it will prompt you to specify a filename and location for the first save.</p>
+                    <p><strong>Note:</strong> SavePlus can be run on unsaved scenes, but it will prompt you to specify a
+                        filename and location for the first save.</p>
                 </div>
-                
+
                 <h3>Version Preview</h3>
-                <p>Before saving, SavePlus shows a preview of what the next version filename will be, allowing you to verify the naming pattern is being correctly recognized.</p>
+                <p>Before saving, SavePlus shows a preview of what the next version filename will be, allowing you to
+                    verify the naming pattern is being correctly recognized.</p>
             </section>
 
             <section id="save-as-new">
                 <h2>Save As New</h2>
-                
-                <p>The "Save As New" function allows you to save your file with a completely new name or in a new location without incrementing the version number.</p>
-                
+
+                <p>The "Save As New" function allows you to save your file with a completely new name or in a new
+                    location without incrementing the version number.</p>
+
                 <h3>When to Use Save As New</h3>
                 <ul>
                     <li>Starting a new branch of work</li>
@@ -676,7 +725,7 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Changing the file location</li>
                     <li>Saving to a reference directory</li>
                 </ul>
-                
+
                 <h3>File Conflict Handling</h3>
                 <p>If a file with the same name already exists, SavePlus gives you three options:</p>
                 <ul>
@@ -684,29 +733,31 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li><strong>Use New Name:</strong> Automatically add a suffix to create a unique filename</li>
                     <li><strong>Cancel:</strong> Abort the save operation</li>
                 </ul>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> Use "Save As New" when you want to create milestone versions or branch your work into different development paths.</p>
+                    <p><strong>Tip:</strong> Use "Save As New" when you want to create milestone versions or branch your
+                        work into different development paths.</p>
                 </div>
             </section>
-            
+
             <section id="auto-backup">
                 <h2>Automatic Backups</h2>
-                
+
                 <p>SavePlus includes a robust auto-backup system to protect your work and provide recovery options.</p>
-                
+
                 <h3>Creating Backups</h3>
                 <p>Backups can be created in two ways:</p>
                 <ul>
-                    <li><strong>Manual Backups:</strong> Click the "Create Backup" button or use Ctrl+B to create an immediate backup</li>
+                    <li><strong>Manual Backups:</strong> Click the "Create Backup" button or use Ctrl+B to create an
+                        immediate backup</li>
                     <li><strong>Automatic Backups:</strong> Enable timed auto-backups in the Preferences tab</li>
                 </ul>
-                
+
                 <h3>Backup Naming Convention</h3>
                 <p>Backup files follow this naming pattern:</p>
                 <pre><code>[original_filename]_backup_[YYYYMMDD_HHMMSS].[extension]</code></pre>
                 <p>For example: <code>character_v001_backup_20250329_143015.ma</code></p>
-                
+
                 <h3>Configuring Auto-Backups</h3>
                 <p>To configure automatic backups:</p>
                 <ol>
@@ -715,17 +766,19 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Set the backup interval (in minutes)</li>
                     <li>Click "Apply Settings"</li>
                 </ol>
-                
+
                 <div class="warning">
-                    <p><strong>Important:</strong> Auto-backups are only created if your file has been modified since the last backup. This prevents creating unnecessary duplicate backups.</p>
+                    <p><strong>Important:</strong> Auto-backups are only created if your file has been modified since
+                        the last backup. This prevents creating unnecessary duplicate backups.</p>
                 </div>
             </section>
 
             <section id="version-history">
                 <h2>Version History</h2>
-                
-                <p>SavePlus keeps track of all your saved versions, allowing you to review, access, and restore previous iterations of your work.</p>
-                
+
+                <p>SavePlus keeps track of all your saved versions, allowing you to review, access, and restore previous
+                    iterations of your work.</p>
+
                 <h3>Accessing Version History</h3>
                 <p>To view your version history:</p>
                 <ol>
@@ -734,7 +787,7 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>The top section shows recent files across all projects</li>
                     <li>The bottom section shows versions of the currently open file</li>
                 </ol>
-                
+
                 <h3>Version Notes</h3>
                 <p>You can add notes to each version to document changes:</p>
                 <ol>
@@ -742,14 +795,14 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Add a "Quick Note" before saving, or</li>
                     <li>When you save, a notes dialog will appear allowing you to document your changes</li>
                 </ol>
-                
+
                 <h3>Opening Previous Versions</h3>
                 <p>To open a previous version:</p>
                 <ol>
                     <li>Select the version from either the Recent Files list or Version History table</li>
                     <li>Click "Open Selected"</li>
                 </ol>
-                
+
                 <h3>Exporting Version History</h3>
                 <p>You can export your version history to a text file for documentation or review:</p>
                 <ol>
@@ -757,17 +810,19 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Choose a location to save the text file</li>
                     <li>The exported file contains comprehensive information about all version groups</li>
                 </ol>
-                
+
                 <div class="note">
-                    <p><strong>Note:</strong> SavePlus stores up to 50 versions per file group and can track an unlimited number of file groups.</p>
+                    <p><strong>Note:</strong> SavePlus stores up to 50 versions per file group and can track an
+                        unlimited number of file groups.</p>
                 </div>
             </section>
 
             <section id="name-generator">
                 <h2>Name Generator</h2>
-                
-                <p>The Name Generator helps maintain consistent file naming across projects and teams by providing a structured way to create standardized filenames.</p>
-                
+
+                <p>The Name Generator helps maintain consistent file naming across projects and teams by providing a
+                    structured way to create standardized filenames.</p>
+
                 <h3>Using the Name Generator</h3>
                 <p>To generate a standardized filename:</p>
                 <ol>
@@ -785,7 +840,7 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Click "Generate Filename"</li>
                     <li>The generated filename will appear in the preview and be applied to the main filename field</li>
                 </ol>
-                
+
                 <h3>Pipeline Stages</h3>
                 <p>SavePlus includes predefined pipeline stages common in animation and VFX workflows:</p>
                 <ul>
@@ -798,29 +853,31 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li><strong>Lighting:</strong> Establishing mood and render look</li>
                     <li><strong>Final:</strong> Shot approved and ready for delivery</li>
                 </ul>
-                
+
                 <h3>Filename Structure</h3>
                 <p>Generated filenames follow this convention:</p>
                 <pre><code>[Assignment][Number]_[LastName]_[FirstName]_[Stage]_[Status]_[Version]</code></pre>
                 <p>For example: <code>A01_Smith_John_blocking_wip_01</code></p>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> Your name generator settings are remembered between sessions, making it easy to maintain consistent naming across multiple saves.</p>
+                    <p><strong>Tip:</strong> Your name generator settings are remembered between sessions, making it
+                        easy to maintain consistent naming across multiple saves.</p>
                 </div>
             </section>
 
             <section id="save-reminders">
                 <h2>Save Reminders</h2>
-                
-                <p>SavePlus includes a customizable reminder system to help establish good saving habits and prevent work loss due to forgetting to save.</p>
-                
+
+                <p>SavePlus includes a customizable reminder system to help establish good saving habits and prevent
+                    work loss due to forgetting to save.</p>
+
                 <h3>Configuring Save Reminders</h3>
                 <p>To enable and configure save reminders:</p>
                 <ol>
                     <li>In the File Options section, check "Enable save reminder every"</li>
                     <li>Set the reminder interval (in minutes)</li>
                 </ol>
-                
+
                 <h3>How Reminders Work</h3>
                 <p>Once enabled, SavePlus will:</p>
                 <ul>
@@ -834,7 +891,7 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     </li>
                     <li>Display a reminder dialog when the specified interval has passed</li>
                 </ul>
-                
+
                 <h3>Reminder Dialog Options</h3>
                 <p>When the reminder dialog appears, you have several options:</p>
                 <ul>
@@ -847,24 +904,26 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     </li>
                     <li><strong>Remind Me Later:</strong> Dismisses the dialog and reminds you again in 2 minutes</li>
                 </ul>
-                
+
                 <div class="note">
-                    <p><strong>Note:</strong> Save reminders will continue to appear until you save your file or disable the reminder feature.</p>
+                    <p><strong>Note:</strong> Save reminders will continue to appear until you save your file or disable
+                        the reminder feature.</p>
                 </div>
             </section>
 
             <section id="preferences">
                 <h2>Preferences</h2>
-                
-                <p>SavePlus offers extensive customization options to tailor the tool to your specific workflow needs.</p>
-                
+
+                <p>SavePlus offers extensive customization options to tailor the tool to your specific workflow needs.
+                </p>
+
                 <h3>Accessing Preferences</h3>
                 <p>To access the preferences:</p>
                 <ol>
                     <li>Open the SavePlus tool</li>
                     <li>Click the "Preferences" tab</li>
                 </ol>
-                
+
                 <h3>General Settings</h3>
                 <ul>
                     <li><strong>Default File Type:</strong> Choose between Maya ASCII (.ma) and Maya Binary (.mb)</li>
@@ -876,39 +935,42 @@ savePlus_launcher.launch_save_plus()</code></pre>
 
             <section id="file-options">
                 <h2>File Options</h2>
-                
+
                 <p>These settings control how files are named and where they are saved.</p>
-                
+
                 <h3>Default Save Location</h3>
                 <p>Set a default directory for saving files. This location will be used when:</p>
                 <ul>
                     <li>No specific path is specified</li>
                     <li>"Use current directory" is unchecked</li>
                 </ul>
-                
+
                 <h3>Project Directory</h3>
-                <p>Define your Maya project directory for more organized file management. This is particularly useful for:</p>
+                <p>Define your Maya project directory for more organized file management. This is particularly useful
+                    for:</p>
                 <ul>
                     <li>Studios with established project structures</li>
                     <li>Maintaining consistent file organization across multiple artists</li>
                 </ul>
-                
+
                 <h3>Version Notes</h3>
                 <p>Enable or disable the version notes feature, which allows you to document changes with each save.</p>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> For team environments, it's recommended to set a standard project directory structure and configure all team members' SavePlus preferences accordingly.</p>
+                    <p><strong>Tip:</strong> For team environments, it's recommended to set a standard project directory
+                        structure and configure all team members' SavePlus preferences accordingly.</p>
                 </div>
             </section>
 
             <section id="path-settings">
                 <h2>Path Settings</h2>
-                
+
                 <p>SavePlus provides several ways to manage file paths for greater flexibility.</p>
-                
+
                 <h3>Using Current Directory</h3>
-                <p>When "Use current directory" is checked, SavePlus will save files in the same directory as the currently open file. This is useful for continuing work on existing files.</p>
-                
+                <p>When "Use current directory" is checked, SavePlus will save files in the same directory as the
+                    currently open file. This is useful for continuing work on existing files.</p>
+
                 <h3>Custom Directory Selection</h3>
                 <p>To select a custom save location:</p>
                 <ol>
@@ -916,7 +978,7 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>Navigate to your desired directory</li>
                     <li>Select the directory and click "Open"</li>
                 </ol>
-                
+
                 <h3>Reference Path</h3>
                 <p>The "Reference" button allows you to extract a path from a referenced file in your scene:</p>
                 <ol>
@@ -925,17 +987,19 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>SavePlus will extract the directory from the reference file</li>
                     <li>You'll be asked if you want to incorporate the reference name into your filename</li>
                 </ol>
-                
+
                 <div class="note">
-                    <p><strong>Note:</strong> The Reference Path feature is particularly useful when working with character rigs or environment assets, as it helps organize animation files alongside their reference files.</p>
+                    <p><strong>Note:</strong> The Reference Path feature is particularly useful when working with
+                        character rigs or environment assets, as it helps organize animation files alongside their
+                        reference files.</p>
                 </div>
             </section>
 
             <section id="ui-settings">
                 <h2>UI Settings</h2>
-                
+
                 <p>Customize the SavePlus interface to match your workflow preferences.</p>
-                
+
                 <h3>Default Section Expansion</h3>
                 <p>Choose which sections of the SavePlus interface are expanded by default:</p>
                 <ul>
@@ -943,117 +1007,138 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li><strong>Name Generator section expanded by default</strong></li>
                     <li><strong>Log Output section expanded by default</strong></li>
                 </ul>
-                
+
                 <h3>Log to Script Editor</h3>
                 <p>Enable or disable logging to Maya's Script Editor in addition to the SavePlus log window.</p>
-                
+
                 <h3>Applying UI Settings</h3>
                 <p>After making changes to your preferences:</p>
                 <ol>
                     <li>Click the "Apply Settings" button at the bottom of the Preferences tab</li>
                     <li>Your settings will be saved and applied immediately</li>
                 </ol>
-                
+
                 <div class="tip">
-                    <p><strong>Tip:</strong> For a cleaner interface, keep only the sections you frequently use expanded by default.</p>
+                    <p><strong>Tip:</strong> For a cleaner interface, keep only the sections you frequently use expanded
+                        by default.</p>
                 </div>
             </section>
 
             <section id="faq">
                 <h2>Frequently Asked Questions</h2>
-                
+
                 <h3>General Questions</h3>
-                
+
                 <h4>Q: How does SavePlus differ from Maya's built-in increment save?</h4>
-                <p>A: SavePlus offers more intelligent versioning that preserves naming patterns, adds version history tracking with notes, provides automatic backups, save reminders, and a name generator for consistent naming conventions.</p>
-                
+                <p>A: SavePlus offers more intelligent versioning that preserves naming patterns, adds version history
+                    tracking with notes, provides automatic backups, save reminders, and a name generator for consistent
+                    naming conventions.</p>
+
                 <h4>Q: Can I use SavePlus with other Autodesk software?</h4>
-                <p>A: SavePlus is specifically designed for Maya 2025. While the core concepts could work in other applications, the current implementation is Maya-specific.</p>
-                
+                <p>A: SavePlus is specifically designed for Maya 2025. While the core concepts could work in other
+                    applications, the current implementation is Maya-specific.</p>
+
                 <h4>Q: Will SavePlus work with network drives?</h4>
-                <p>A: Yes, SavePlus works with network drives, local drives, and removable media. It uses platform-independent path handling to ensure compatibility across different storage types.</p>
-                
+                <p>A: Yes, SavePlus works with network drives, local drives, and removable media. It uses
+                    platform-independent path handling to ensure compatibility across different storage types.</p>
+
                 <h3>Technical Questions</h3>
-                
+
                 <h4>Q: Where is the version history stored?</h4>
-                <p>A: Version history is stored in a JSON file in your Maya user directory. This means history persists between Maya sessions and is user-specific.</p>
-                
+                <p>A: Version history is stored in a JSON file in your Maya user directory. This means history persists
+                    between Maya sessions and is user-specific.</p>
+
                 <h4>Q: Can I share version history with other team members?</h4>
-                <p>A: The version history is stored per-user, but you can export the history to a text file and share that document with team members for reference.</p>
-                
+                <p>A: The version history is stored per-user, but you can export the history to a text file and share
+                    that document with team members for reference.</p>
+
                 <h4>Q: Does SavePlus work with Maya projects?</h4>
-                <p>A: Yes, SavePlus is fully compatible with Maya's project structure and can be configured to use project-specific paths.</p>
-                
+                <p>A: Yes, SavePlus is fully compatible with Maya's project structure and can be configured to use
+                    project-specific paths.</p>
+
                 <h3>Workflow Questions</h3>
-                
+
                 <h4>Q: What keyboard shortcuts can I use with SavePlus?</h4>
                 <p>A: SavePlus includes several built-in shortcuts:
-                    <ul>
-                        <li>Ctrl+S: Save Plus (increment save)</li>
-                        <li>Ctrl+Shift+S: Save As New</li>
-                        <li>Ctrl+B: Create Backup</li>
-                    </ul>
+                <ul>
+                    <li>Ctrl+S: Save Plus (increment save)</li>
+                    <li>Ctrl+Shift+S: Save As New</li>
+                    <li>Ctrl+B: Create Backup</li>
+                </ul>
                 </p>
-                
+
                 <h4>Q: Can I disable the save reminders?</h4>
-                <p>A: Yes, you can toggle the save reminders on/off in the File Options section. You can also permanently disable them via the checkbox in the reminder dialog.</p>
-                
+                <p>A: Yes, you can toggle the save reminders on/off in the File Options section. You can also
+                    permanently disable them via the checkbox in the reminder dialog.</p>
+
                 <h4>Q: How many backups should I keep?</h4>
-                <p>A: SavePlus does not automatically delete backups, allowing you to keep as many as you need. As a best practice, we recommend regular cleanup of older backups to manage disk space, while keeping key milestone versions.</p>
+                <p>A: SavePlus does not automatically delete backups, allowing you to keep as many as you need. As a
+                    best practice, we recommend regular cleanup of older backups to manage disk space, while keeping key
+                    milestone versions.</p>
             </section>
 
             <section id="common-issues">
                 <h2>Common Issues</h2>
-            
+
                 <h3>Installation Problems</h3>
-            
-                <h4>Issue: SavePlus doesn't appear on the shelf after installation</h4>
-                <p><strong>Solution:</strong> Try manually running the MEL installer by entering this in the Script Editor:</p>
+
+                <h4>Issue: SavePlus doesn't appear on the shelf after installation <span class="version-badge">Improved
+                        in v1.2.1</span></h4>
+                <p><strong>Solution:</strong> With version 1.2.1's improved icon handling, this issue should be less
+                    common. If you still encounter it, try manually running the MEL installer by entering this in the
+                    Script Editor:</p>
                 <pre><code>source "install_saveplus.mel";</code></pre>
-            
+
                 <h4>Issue: "Cannot find procedure" error when running the installer</h4>
-                <p><strong>Solution:</strong> Make sure you've extracted all files from the ZIP package and that the MEL file is
+                <p><strong>Solution:</strong> Make sure you've extracted all files from the ZIP package and that the MEL
+                    file is
                     accessible to Maya. Try specifying the full path to the file:</p>
                 <pre><code>source "C:/path/to/install_saveplus.mel";</code></pre>
-                
+
                 <h4>Issue: Import errors when launching SavePlus</h4>
-                <p><strong>Solution:</strong> Ensure all SavePlus files are in your Maya scripts directory. If issues persist, try reinstalling using the quick install method.</p>
-                
+                <p><strong>Solution:</strong> Ensure all SavePlus files are in your Maya scripts directory. If issues
+                    persist, try reinstalling using the quick install method.</p>
+
                 <h3>Saving Issues</h3>
-                
+
                 <h4>Issue: SavePlus isn't incrementing filenames as expected</h4>
-                <p><strong>Solution:</strong> Check the version preview before saving to see how SavePlus is interpreting your filename. For complex naming patterns, consider using the Name Generator for more predictable results.</p>
-                
+                <p><strong>Solution:</strong> Check the version preview before saving to see how SavePlus is
+                    interpreting your filename. For complex naming patterns, consider using the Name Generator for more
+                    predictable results.</p>
+
                 <h4>Issue: "File must be saved before using SavePlus" error</h4>
                 <p><strong>Solution:</strong> For first-time saves, either:
-                    <ul>
-                        <li>Use "Save As New" to specify a filename and location, or</li>
-                        <li>Enter a filename in the filename field before using Save Plus</li>
-                    </ul>
+                <ul>
+                    <li>Use "Save As New" to specify a filename and location, or</li>
+                    <li>Enter a filename in the filename field before using Save Plus</li>
+                </ul>
                 </p>
-                
+
                 <h3>Performance and Behavior</h3>
-                
+
                 <h4>Issue: Save reminders not appearing</h4>
                 <p><strong>Solution:</strong> Verify that:
-                    <ul>
-                        <li>"Enable save reminder every" is checked</li>
-                        <li>A reasonable time interval is set</li>
-                        <li>SavePlus is still running (check if the UI is open)</li>
-                    </ul>
+                <ul>
+                    <li>"Enable save reminder every" is checked</li>
+                    <li>A reasonable time interval is set</li>
+                    <li>SavePlus is still running (check if the UI is open)</li>
+                </ul>
                 </p>
-                
+
                 <h4>Issue: Version history not updating</h4>
-                <p><strong>Solution:</strong> Click the "Refresh" button in the History tab. If history still doesn't appear, check if your user directory is write-protected.</p>
-                
+                <p><strong>Solution:</strong> Click the "Refresh" button in the History tab. If history still doesn't
+                    appear, check if your user directory is write-protected.</p>
+
                 <div class="warning">
-                    <p><strong>Note:</strong> If you encounter persistent issues that aren't addressed here, please contact support with detailed information about your Maya version, operating system, and the steps to reproduce the problem.</p>
+                    <p><strong>Note:</strong> If you encounter persistent issues that aren't addressed here, please
+                        contact support with detailed information about your Maya version, operating system, and the
+                        steps to reproduce the problem.</p>
                 </div>
             </section>
 
             <section id="support">
                 <h2>Getting Support</h2>
-                
+
                 <h3>Documentation Resources</h3>
                 <p>Before contacting support, please check these resources:</p>
                 <ul>
@@ -1061,18 +1146,21 @@ savePlus_launcher.launch_save_plus()</code></pre>
                     <li>The <a href="#faq">FAQ section</a></li>
                     <li>The <a href="#common-issues">Common Issues section</a></li>
                 </ul>
-                
+
                 <h3>Community Support</h3>
                 <p>Join the SavePlus community for peer support:</p>
                 <ul>
-                    <li><a href="https://github.com/yourusername/saveplus/discussions" target="_blank">GitHub Discussions</a> - Ask questions and share tips</li>
-                    <li><a href="https://discord.gg/saveplus" target="_blank">Discord Community</a> - Chat with other SavePlus users</li>
+                    <li><a href="https://github.com/dshepstone/saveplus/discussions" target="_blank">GitHub
+                            Discussions</a> - Ask questions and share tips</li>
+                    <li><a href="https://discord.gg/saveplus" target="_blank">Discord Community</a> - Chat with other
+                        SavePlus users</li>
                 </ul>
-                
+
                 <h3>Reporting Issues</h3>
                 <p>If you encounter a bug or want to request a feature:</p>
                 <ol>
-                    <li>Visit the <a href="https://github.com/yourusername/saveplus/issues" target="_blank">GitHub Issues</a> page</li>
+                    <li>Visit the <a href="https://github.com/dshepstone/saveplus/issues" target="_blank">GitHub
+                            Issues</a> page</li>
                     <li>Check if your issue has already been reported</li>
                     <li>If not, create a new issue with as much detail as possible:
                         <ul>
@@ -1085,16 +1173,18 @@ savePlus_launcher.launch_save_plus()</code></pre>
                         </ul>
                     </li>
                 </ol>
-                
+
                 <h3>Direct Support</h3>
                 <p>For urgent issues or personalized assistance:</p>
                 <ul>
                     <li>Email: <a href="mailto:support@saveplus.example.com">support@saveplus.example.com</a></li>
                     <li>Response time: Typically within 1-2 business days</li>
                 </ul>
-                
+
                 <div class="note">
-                    <p><strong>Tip:</strong> When seeking support, providing log output from SavePlus can greatly assist in troubleshooting. You can copy this from the Log Output section or from Maya's Script Editor.</p>
+                    <p><strong>Tip:</strong> When seeking support, providing log output from SavePlus can greatly assist
+                        in troubleshooting. You can copy this from the Log Output section or from Maya's Script Editor.
+                    </p>
                 </div>
             </section>
         </div>
@@ -1126,14 +1216,16 @@ savePlus_launcher.launch_save_plus()</code></pre>
                         <li><a href="documentation.html#installation">Installation Guide</a></li>
                         <li><a href="documentation.html#faq">FAQ</a></li>
                         <li><a href="https://github.com/dshepstone/saveplus" target="_blank">GitHub Repository</a></li>
-                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Report Issues</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Report Issues</a>
+                        </li>
                     </ul>
                 </div>
                 <div class="footer-links">
                     <h3>Contact</h3>
                     <ul>
                         <li><a href="mailto:fair.branch3171@shepstone.ca">Email Support</a></li>
-                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Community Forum</a></li>
+                        <li><a href="https://github.com/dshepstone/saveplus/issues" target="_blank">Community Forum</a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -1143,4 +1235,5 @@ savePlus_launcher.launch_save_plus()</code></pre>
         </div>
     </footer>
 </body>
+
 </html>
