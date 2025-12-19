@@ -84,6 +84,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_NAME_EXPANDED = "SavePlusNameExpanded"
     OPT_VAR_LOG_EXPANDED = "SavePlusLogExpanded"
     OPT_VAR_RESPECT_PROJECT = "SavePlusRespectProject"
+    OPT_VAR_PROJECT_PREFIX_LETTER = "SavePlusProjectPrefixLetter"
+    OPT_VAR_PROJECT_PREFIX_NUMBER = "SavePlusProjectPrefixNumber"
+    OPT_VAR_PROJECT_NAME = "SavePlusProjectName"
+    OPT_VAR_PROJECT_ROOT_PATH = "SavePlusProjectRootPath"
+    OPT_VAR_PROJECT_SET_PATH = "SavePlusProjectSetPath"
 
     # New option variables
     OPT_VAR_ENABLE_AUTO_BACKUP = "SavePlusEnableAutoBackup"
@@ -169,6 +174,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.saveplus_layout = QVBoxLayout(self.saveplus_tab)
             self.saveplus_layout.setContentsMargins(8, 8, 8, 8)
             self.saveplus_layout.setSpacing(8)
+
+            # Create Project Tab
+            self.project_tab = QWidget()
+            self.project_layout = QVBoxLayout(self.project_tab)
+            self.project_layout.setContentsMargins(8, 8, 8, 8)
+            self.project_layout.setSpacing(10)
             
             # Create History Tab
             self.history_tab = QWidget()
@@ -184,8 +195,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Add tabs to tab widget
             self.tab_widget.addTab(self.saveplus_tab, "SavePlus")
+            self.tab_widget.addTab(self.project_tab, "Project")
             self.tab_widget.addTab(self.history_tab, "History")
             self.tab_widget.addTab(self.preferences_tab, "Preferences")
+
+            self.project_tab_index = self.tab_widget.indexOf(self.project_tab)
+            self.history_tab_index = self.tab_widget.indexOf(self.history_tab)
             
             # Add tab widget to main layout
             main_layout.addWidget(self.tab_widget)
@@ -730,6 +745,102 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add scroll area to saveplus layout
             self.saveplus_layout.addWidget(self.scroll_area)
             
+            # --- PROJECT TAB CONTENT ---
+            
+            # Current project status
+            current_project_group = QGroupBox("Current Project")
+            current_project_layout = QVBoxLayout(current_project_group)
+            
+            self.project_tab_status_label = QLabel("Project: Not detected")
+            self.project_tab_status_label.setStyleSheet("color: #666666; padding: 4px;")
+            current_project_layout.addWidget(self.project_tab_status_label)
+            
+            project_status_controls = QHBoxLayout()
+            refresh_project_button = QPushButton("Refresh")
+            refresh_project_button.clicked.connect(self.update_project_tracking)
+            project_status_controls.addStretch()
+            project_status_controls.addWidget(refresh_project_button)
+            current_project_layout.addLayout(project_status_controls)
+            
+            # Set existing project
+            existing_project_group = QGroupBox("Set Existing Project")
+            existing_project_layout = QFormLayout(existing_project_group)
+            
+            existing_project_path_layout = QHBoxLayout()
+            self.project_set_path_input = QLineEdit()
+            self.project_set_path_input.setPlaceholderText("Select an existing Maya project folder")
+            self.project_set_path_input.setText(self.load_option_var(self.OPT_VAR_PROJECT_SET_PATH, ""))
+            browse_existing_button = QPushButton("Browse...")
+            browse_existing_button.setFixedWidth(80)
+            browse_existing_button.clicked.connect(self.browse_existing_project_directory)
+            existing_project_path_layout.addWidget(self.project_set_path_input)
+            existing_project_path_layout.addWidget(browse_existing_button)
+            
+            existing_project_layout.addRow("Project Path:", existing_project_path_layout)
+            
+            set_project_button = QPushButton("Set Project")
+            set_project_button.clicked.connect(self.set_existing_project)
+            existing_project_layout.addRow("", set_project_button)
+            
+            # Create new project
+            create_project_group = QGroupBox("Create New Project")
+            create_project_layout = QFormLayout(create_project_group)
+            
+            project_prefix_layout = QHBoxLayout()
+            self.project_prefix_letter_combo = QComboBox()
+            self.project_prefix_letter_combo.addItems(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
+            saved_prefix_letter = self.load_option_var(self.OPT_VAR_PROJECT_PREFIX_LETTER, "A")
+            prefix_index = self.project_prefix_letter_combo.findText(saved_prefix_letter)
+            if prefix_index >= 0:
+                self.project_prefix_letter_combo.setCurrentIndex(prefix_index)
+            self.project_prefix_letter_combo.setFixedWidth(50)
+            
+            self.project_prefix_number_spinbox = QSpinBox()
+            self.project_prefix_number_spinbox.setRange(1, 99)
+            self.project_prefix_number_spinbox.setValue(self.load_option_var(self.OPT_VAR_PROJECT_PREFIX_NUMBER, 1))
+            self.project_prefix_number_spinbox.setFixedWidth(60)
+            
+            project_prefix_layout.addWidget(self.project_prefix_letter_combo)
+            project_prefix_layout.addWidget(self.project_prefix_number_spinbox)
+            project_prefix_layout.addStretch()
+            
+            self.project_name_input = QLineEdit()
+            self.project_name_input.setPlaceholderText("Project name (e.g. HeroShot)")
+            self.project_name_input.setText(self.load_option_var(self.OPT_VAR_PROJECT_NAME, ""))
+            
+            project_root_layout = QHBoxLayout()
+            self.project_root_path_input = QLineEdit()
+            self.project_root_path_input.setPlaceholderText("Root directory for the new project")
+            self.project_root_path_input.setText(self.load_option_var(self.OPT_VAR_PROJECT_ROOT_PATH, ""))
+            browse_root_button = QPushButton("Browse...")
+            browse_root_button.setFixedWidth(80)
+            browse_root_button.clicked.connect(self.browse_project_root_directory)
+            project_root_layout.addWidget(self.project_root_path_input)
+            project_root_layout.addWidget(browse_root_button)
+            
+            self.project_name_preview = QLabel("Project name preview: ")
+            self.project_name_preview.setStyleSheet("color: #0066CC; font-weight: bold;")
+            
+            create_project_button = QPushButton("Create Project")
+            create_project_button.clicked.connect(self.create_project)
+            
+            create_project_layout.addRow("Project Prefix:", project_prefix_layout)
+            create_project_layout.addRow("Project Name:", self.project_name_input)
+            create_project_layout.addRow("Project Root:", project_root_layout)
+            create_project_layout.addRow("", self.project_name_preview)
+            create_project_layout.addRow("", create_project_button)
+            
+            self.project_layout.addWidget(current_project_group)
+            self.project_layout.addWidget(existing_project_group)
+            self.project_layout.addWidget(create_project_group)
+            self.project_layout.addStretch()
+            
+            self.project_prefix_letter_combo.currentIndexChanged.connect(self.update_project_name_preview)
+            self.project_prefix_number_spinbox.valueChanged.connect(self.update_project_name_preview)
+            self.project_name_input.textChanged.connect(self.update_project_name_preview)
+            self.project_root_path_input.textChanged.connect(self.update_project_name_preview)
+            self.update_project_name_preview()
+            
             # --- HISTORY TAB CONTENT ---
             
             # Create Recent Files group at the top of History tab
@@ -784,6 +895,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             refresh_history_button = QPushButton("Refresh")
             refresh_history_button.clicked.connect(self.populate_history)
             
+            clear_history_button = QPushButton("Clear History")
+            clear_history_button.clicked.connect(self.clear_history)
+
             open_history_button = QPushButton("Open Selected")
             open_history_button.clicked.connect(self.open_selected_history_file)
             
@@ -792,6 +906,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             export_history_button.setToolTip("Export version history to a text file")
             
             history_controls.addWidget(refresh_history_button)
+            history_controls.addWidget(clear_history_button)
             history_controls.addStretch()
             history_controls.addWidget(open_history_button)
             history_controls.addWidget(export_history_button)
@@ -1464,6 +1579,125 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.pref_project_path.setText(directory)
             print(f"Project directory set to: {directory}")
             self.status_bar.showMessage(f"Project directory set to: {directory}", 5000)
+
+    def browse_existing_project_directory(self):
+        """Open file browser to select an existing project directory"""
+        current_path = self.project_set_path_input.text()
+        directory = QFileDialog.getExistingDirectory(
+            self, "Select Existing Project Directory", current_path
+        )
+        
+        if directory:
+            self.project_set_path_input.setText(directory)
+            cmds.optionVar(sv=(self.OPT_VAR_PROJECT_SET_PATH, directory))
+            self.status_bar.showMessage(f"Existing project path set to: {directory}", 5000)
+
+    def browse_project_root_directory(self):
+        """Open file browser to select the root directory for new projects"""
+        current_path = self.project_root_path_input.text()
+        directory = QFileDialog.getExistingDirectory(
+            self, "Select Project Root Directory", current_path
+        )
+        
+        if directory:
+            self.project_root_path_input.setText(directory)
+            cmds.optionVar(sv=(self.OPT_VAR_PROJECT_ROOT_PATH, directory))
+            self.status_bar.showMessage(f"Project root set to: {directory}", 5000)
+
+    def sanitize_project_component(self, value):
+        """Sanitize project name components for consistent naming"""
+        cleaned = re.sub(r'[^A-Za-z0-9_]+', '_', value.strip())
+        cleaned = re.sub(r'_+', '_', cleaned)
+        return cleaned.strip("_")
+
+    def build_project_directory_name(self):
+        """Build a project directory name from the current inputs"""
+        prefix_letter = self.project_prefix_letter_combo.currentText()
+        prefix_number = str(self.project_prefix_number_spinbox.value()).zfill(2)
+        project_name = self.sanitize_project_component(self.project_name_input.text())
+        
+        prefix = f"{prefix_letter}{prefix_number}"
+        if project_name:
+            return f"{prefix}_{project_name}"
+        return prefix
+
+    def update_project_name_preview(self):
+        """Update the project name preview label"""
+        project_name = self.build_project_directory_name()
+        self.project_name_preview.setText(f"Project name preview: {project_name}")
+
+    def set_existing_project(self):
+        """Set Maya's current project based on the provided path"""
+        project_path = self.project_set_path_input.text().strip()
+        if not project_path:
+            QMessageBox.warning(self, "Missing Project Path", "Please select a project directory.")
+            return
+        
+        self.set_project_from_path(project_path)
+
+    def set_project_from_path(self, project_path):
+        """Set the Maya project and update UI tracking"""
+        if not os.path.isdir(project_path):
+            QMessageBox.warning(self, "Invalid Project Path", "The selected project directory does not exist.")
+            return
+        
+        normalized_path = savePlus_core.normalize_path(project_path)
+        try:
+            mel.eval(f'setProject "{normalized_path}"')
+        except Exception as e:
+            savePlus_core.debug_print(f"Error setting project via MEL: {e}")
+            try:
+                cmds.workspace(directory=normalized_path, openWorkspace=True)
+            except Exception as e2:
+                QMessageBox.critical(self, "Project Set Failed", f"Unable to set the project: {e2}")
+                return
+        
+        self.project_set_path_input.setText(normalized_path)
+        cmds.optionVar(sv=(self.OPT_VAR_PROJECT_SET_PATH, normalized_path))
+        
+        if hasattr(self, 'pref_project_path'):
+            self.pref_project_path.setText(normalized_path)
+            cmds.optionVar(sv=(self.OPT_VAR_PROJECT_PATH, normalized_path))
+        
+        self.project_directory = savePlus_core.get_maya_project_directory()
+        self.update_project_display()
+        self.status_bar.showMessage(f"Project set to: {normalized_path}", 5000)
+
+    def create_project(self):
+        """Create a new project on disk and set it in Maya"""
+        project_root = self.project_root_path_input.text().strip()
+        if not project_root:
+            QMessageBox.warning(self, "Missing Project Root", "Please choose a project root directory.")
+            return
+        
+        project_dir_name = self.build_project_directory_name()
+        if not project_dir_name:
+            QMessageBox.warning(self, "Missing Project Name", "Please provide a project name.")
+            return
+        
+        project_path = os.path.join(project_root, project_dir_name)
+        
+        if os.path.exists(project_path):
+            confirm = QMessageBox.question(
+                self,
+                "Project Exists",
+                "This project folder already exists. Set it as the current project?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+            if confirm != QMessageBox.Yes:
+                return
+        else:
+            if not savePlus_core.create_project_structure(project_path):
+                QMessageBox.critical(self, "Project Creation Failed", "Unable to create the project structure.")
+                return
+        
+        cmds.optionVar(sv=(self.OPT_VAR_PROJECT_PREFIX_LETTER, self.project_prefix_letter_combo.currentText()))
+        cmds.optionVar(iv=(self.OPT_VAR_PROJECT_PREFIX_NUMBER, self.project_prefix_number_spinbox.value()))
+        cmds.optionVar(sv=(self.OPT_VAR_PROJECT_NAME, self.project_name_input.text()))
+        cmds.optionVar(sv=(self.OPT_VAR_PROJECT_ROOT_PATH, project_root))
+        
+        self.set_project_from_path(project_path)
     
     def save_plus(self):
         """Execute the save plus operation with the specified filename"""
@@ -1894,10 +2128,30 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 message = "Error exporting history"
                 self.status_bar.showMessage(message, 5000)
                 print(message)
+
+    def clear_history(self):
+        """Clear version history data"""
+        confirm = QMessageBox.question(
+            self,
+            "Clear History",
+            "This will remove all version history entries. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if confirm != QMessageBox.Yes:
+            return
+        
+        if self.version_history.clear_history():
+            self.populate_history()
+            self.populate_recent_files()
+            self.status_bar.showMessage("History cleared", 5000)
+        else:
+            self.status_bar.showMessage("Failed to clear history", 5000)
     
     def on_tab_changed(self, index):
         """Handle tab changed event"""
-        if index == 1:  # History tab
+        if index == self.history_tab_index:  # History tab
             self.populate_history()
             self.populate_recent_files()
     
@@ -2722,19 +2976,39 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         except Exception as e:
             print(f"[SavePlus Debug] Error handling workspace change: {e}")
 
+    def get_project_status_labels(self):
+        """Return all project status labels that need updates"""
+        labels = []
+        if hasattr(self, 'project_status_label'):
+            labels.append(self.project_status_label)
+        if hasattr(self, 'project_tab_status_label'):
+            labels.append(self.project_tab_status_label)
+        return labels
+
+    def set_project_status(self, text, tooltip=None, style=None):
+        """Set project status text across all status labels"""
+        for label in self.get_project_status_labels():
+            label.setText(text)
+            if tooltip is not None:
+                label.setToolTip(tooltip)
+            if style is not None:
+                label.setStyleSheet(style)
+
     def update_project_display(self):
         """Update UI elements to reflect current project"""
         print("[SavePlus Debug] update_project_display called")
         
-        if not hasattr(self, 'project_status_label'):
-            print("[SavePlus Debug] No project_status_label found")
+        if not self.get_project_status_labels():
+            print("[SavePlus Debug] No project status labels found")
             return
             
         if self.project_directory:
             truncated_path = truncate_path(self.project_directory, 40)
-            self.project_status_label.setText(f"Project: {truncated_path}")
-            self.project_status_label.setToolTip(self.project_directory)
-            self.project_status_label.setStyleSheet("color: #4CAF50;")  # Green for active project
+            self.set_project_status(
+                f"Project: {truncated_path}",
+                tooltip=self.project_directory,
+                style="color: #4CAF50;"
+            )  # Green for active project
             print(f"[SavePlus Debug] Project display updated to: {truncated_path}")
         else:
             # Show different text based on whether we're respecting project structure
@@ -2743,25 +3017,27 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 workspace = cmds.workspace(query=True, rootDirectory=True)
                 if workspace:
                     truncated_path = truncate_path(workspace, 40)
-                    self.project_status_label.setText(f"Project: {truncated_path}")
-                    self.project_status_label.setToolTip(workspace)
-                    self.project_status_label.setStyleSheet("color: #4CAF50;")  # Green for active project
+                    self.set_project_status(
+                        f"Project: {truncated_path}",
+                        tooltip=workspace,
+                        style="color: #4CAF50;"
+                    )  # Green for active project
                     print(f"[SavePlus Debug] Project display set to workspace: {truncated_path}")
                 else:
-                    self.project_status_label.setText("No project active")
-                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red for no project
+                    self.set_project_status("No project active", tooltip="No project active", style="color: #F44336;")
                     print("[SavePlus Debug] No workspace found, showing 'No project active'")
             else:
                 # We're not respecting project structure, show preference path
                 if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
                     default_path = truncate_path(self.pref_default_path.text(), 40)
-                    self.project_status_label.setText(f"Using default path: {default_path}")
-                    self.project_status_label.setToolTip(self.pref_default_path.text())
-                    self.project_status_label.setStyleSheet("color: #F39C12;")  # Orange for preference path
+                    self.set_project_status(
+                        f"Using default path: {default_path}",
+                        tooltip=self.pref_default_path.text(),
+                        style="color: #F39C12;"
+                    )  # Orange for preference path
                     print(f"[SavePlus Debug] Project display set to default path: {default_path}")
                 else:
-                    self.project_status_label.setText("No default path set")
-                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red for no path
+                    self.set_project_status("No default path set", tooltip="No default path set", style="color: #F44336;")
                     print("[SavePlus Debug] No default path set, showing warning message")
 
     def get_save_directory(self):
@@ -2927,7 +3203,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 self.update_save_location_display()
             
             # Update history tab if it's visible
-            if self.tab_widget.currentIndex() == 1:  # History tab
+            if self.tab_widget.currentIndex() == self.history_tab_index:  # History tab
                 self.populate_history()
         except Exception as e:
             print(f"[SavePlus Debug] Error handling file open: {e}")
@@ -3069,9 +3345,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             if not self.respect_project_structure.isChecked():
                 # If not respecting project structure, force clear project path
                 self.project_directory = None
-                self.project_status_label.setText("No project active")
-                self.project_status_label.setStyleSheet("color: #F44336;")  # Red
-                self.project_status_label.setToolTip("No project is active for this new file")
+                self.set_project_status(
+                    "No project active",
+                    tooltip="No project is active for this new file",
+                    style="color: #F44336;"
+                )  # Red
                 
                 # Set selected directory to preference default if available
                 if hasattr(self, 'pref_default_path') and self.pref_default_path.text():
@@ -3086,18 +3364,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 if workspace:
                     self.project_directory = workspace
                     truncated_path = truncate_path(workspace, 40)
-                    self.project_status_label.setText(f"Project (new file): {truncated_path}")
-                    self.project_status_label.setStyleSheet("color: #FFA500;")  # Orange
-                    self.project_status_label.setToolTip(f"Using workspace for new file: {workspace}")
+                    self.set_project_status(
+                        f"Project (new file): {truncated_path}",
+                        tooltip=f"Using workspace for new file: {workspace}",
+                        style="color: #FFA500;"
+                    )  # Orange
                     
                     # Set selected directory to workspace scenes folder
                     self.selected_directory = os.path.join(workspace, "scenes")
                 else:
                     # No workspace set
                     self.project_directory = None
-                    self.project_status_label.setText("No project active")
-                    self.project_status_label.setStyleSheet("color: #F44336;")  # Red
-                    self.project_status_label.setToolTip("No project is active for this new file")
+                    self.set_project_status(
+                        "No project active",
+                        tooltip="No project is active for this new file",
+                        style="color: #F44336;"
+                    )  # Red
                     
                     # Default to Maya scenes directory
                     workspace = cmds.workspace(query=True, directory=True)
@@ -3121,14 +3403,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         print("[SavePlus] Performing direct reset of project display")
         
         # Get reference to the project label
-        if not hasattr(self, 'project_status_label'):
+        if not self.get_project_status_labels():
             print("[SavePlus] No project label found to reset")
             return
         
         # Force text change regardless of internal state
-        self.project_status_label.setText("No active project (manually reset)")
-        self.project_status_label.setStyleSheet("color: #888888; font-style: italic;")
-        self.project_status_label.setToolTip("Project display was manually reset")
+        self.set_project_status(
+            "No active project (manually reset)",
+            tooltip="Project display was manually reset",
+            style="color: #888888; font-style: italic;"
+        )
         
         # If we want to preserve some internal state consistency
         self.project_directory = None

@@ -13,6 +13,19 @@ from maya import cmds
 # Constants
 VERSION = "1.2.2"
 DEBUG_MODE = True
+DEFAULT_PROJECT_DIRS = [
+    "assets",
+    "cache",
+    "clips",
+    "data",
+    "images",
+    "movies",
+    "renderData",
+    "scenes",
+    "scripts",
+    "sound",
+    "sourceimages"
+]
 
 def debug_print(message):
     """Print debug messages if debug mode is enabled"""
@@ -73,6 +86,23 @@ def get_project_relative_path(file_path, project_dir=None):
     
     return file_path
 
+def create_project_structure(project_path):
+    """Create a Maya-style project structure at the given path"""
+    try:
+        os.makedirs(project_path, exist_ok=True)
+        for directory in DEFAULT_PROJECT_DIRS:
+            os.makedirs(os.path.join(project_path, directory), exist_ok=True)
+        
+        workspace_file = os.path.join(project_path, "workspace.mel")
+        if not os.path.exists(workspace_file):
+            with open(workspace_file, "w") as workspace:
+                workspace.write("// SavePlus generated Maya project\n")
+        
+        return True
+    except Exception as e:
+        debug_print(f"Error creating project structure: {e}")
+        return False
+
 class VersionHistoryModel:
     """Class to manage version history data"""
     
@@ -106,6 +136,19 @@ class VersionHistoryModel:
                 json.dump(self.versions, f, indent=2)
         except Exception as e:
             debug_print(f"Error saving version history: {e}")
+
+    def clear_history(self):
+        """Clear version history data from memory and disk"""
+        try:
+            self.versions = {}
+            if os.path.exists(self.history_file):
+                os.remove(self.history_file)
+            else:
+                self.save_history()
+            return True
+        except Exception as e:
+            debug_print(f"Error clearing version history: {e}")
+            return False
     
     def add_version(self, file_path, notes=""):
         """Add a new version to history"""
