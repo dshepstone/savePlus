@@ -15,8 +15,7 @@ import os
 import sys
 import traceback
 import shutil
-from maya import cmds
-from maya import mel  # Import mel here for shelf button installation
+from savePlus_maya import cmds, mel
 
 # Version for this launcher
 VERSION = "1.2.2"  # Update from "1.2.1" to "1.2.2"

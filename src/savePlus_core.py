@@ -8,7 +8,7 @@ import os
 import time
 import json
 from datetime import datetime
-from maya import cmds
+from savePlus_maya import cmds
 
 # Constants
 VERSION = "1.2.2"

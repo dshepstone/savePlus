@@ -9,8 +9,8 @@ import traceback
 import subprocess
 import sys
 
-from maya import cmds, mel
-from maya import cmds, mel
+import savePlus_maya
+from savePlus_maya import cmds, mel
 
 from PySide6.QtWidgets import (QPushButton, QVBoxLayout, QLabel, QLineEdit, 
                               QHBoxLayout, QCheckBox, QFileDialog, QMainWindow, 
@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (QPushButton, QVBoxLayout, QLabel, QLineEdit,
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
+from savePlus_maya import MayaQWidgetDockableMixin
 
 import savePlus_core
 import savePlus_ui_components
@@ -1059,12 +1059,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Enable this timer in Maya's event loop - KEEP THIS IMPORTANT CODE
             if hasattr(self, 'save_timer'):
-                # Connect to Maya's main loop if needed
-                try:
-                    from maya import OpenMayaUI as omui
+                omui = savePlus_maya.get_open_maya_ui()
+                if omui:
                     print("[SavePlus Debug] Connected timer to Maya's event loop")
-                except Exception as e:
-                    print(f"[SavePlus Debug] Using standard Qt timer: {e}")
+                else:
+                    print("[SavePlus Debug] Using standard Qt timer (Maya UI unavailable)")
 
             # Load timer preference without triggering stateChanged
             timer_enabled = self.load_option_var(self.OPT_VAR_ENABLE_TIMED_WARNING, False)
