@@ -94,6 +94,15 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_ENABLE_AUTO_BACKUP = "SavePlusEnableAutoBackup"
     OPT_VAR_BACKUP_INTERVAL = "SavePlusBackupInterval"
     OPT_VAR_ADD_VERSION_NOTES = "SavePlusAddVersionNotes"
+
+    # Additional preference option variables
+    OPT_VAR_CLEAR_QUICK_NOTE = "SavePlusClearQuickNote"
+    OPT_VAR_ENABLE_SAVE_SOUND = "SavePlusEnableSaveSound"
+    OPT_VAR_MAX_HISTORY_ENTRIES = "SavePlusMaxHistoryEntries"
+    OPT_VAR_BACKUP_LOCATION = "SavePlusBackupLocation"
+    OPT_VAR_MAX_BACKUPS = "SavePlusMaxBackups"
+    OPT_VAR_SHOW_SAVE_CONFIRMATION = "SavePlusShowSaveConfirmation"
+    OPT_VAR_AUTO_INCREMENT_VERSION = "SavePlusAutoIncrementVersion"
     
     def __init__(self, parent=None):
         try:
@@ -1016,107 +1025,337 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.history_layout.addWidget(version_history_group)
             
             # --- PREFERENCES TAB CONTENT ---
-            
-            # General Preferences
-            general_group = QGroupBox("General Settings")
-            general_layout = QFormLayout(general_group)
-            
+
+            # Create a scroll area for preferences
+            pref_scroll = QScrollArea()
+            pref_scroll.setWidgetResizable(True)
+            pref_scroll.setFrameShape(QFrame.NoFrame)
+            pref_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+            pref_container = QWidget()
+            pref_container_layout = QVBoxLayout(pref_container)
+            pref_container_layout.setContentsMargins(5, 5, 5, 5)
+            pref_container_layout.setSpacing(15)
+
+            # Helper function to create description labels
+            def create_help_label(text):
+                help_label = QLabel(text)
+                help_label.setStyleSheet("color: #888888; font-size: 10px; padding-left: 20px; padding-bottom: 8px;")
+                help_label.setWordWrap(True)
+                return help_label
+
+            # Helper function to create section headers
+            def create_section_header(text):
+                header = QLabel(text)
+                header.setStyleSheet("""
+                    font-size: 12px;
+                    font-weight: bold;
+                    color: #CCCCCC;
+                    padding: 8px 0px 4px 0px;
+                    border-bottom: 1px solid #444444;
+                """)
+                return header
+
+            # ============================================================
+            # SAVING BEHAVIOR SECTION
+            # ============================================================
+            saving_group = QGroupBox("Saving Behavior")
+            saving_group.setToolTip("Configure how SavePlus handles file saving operations")
+            saving_layout = QVBoxLayout(saving_group)
+            saving_layout.setSpacing(2)
+
             # Default file type preference
+            filetype_layout = QHBoxLayout()
+            filetype_label = QLabel("Default File Type:")
+            filetype_label.setFixedWidth(150)
+            filetype_label.setToolTip("The file format used when saving new files")
             self.pref_default_filetype = QComboBox()
             self.pref_default_filetype.addItems(["Maya ASCII (.ma)", "Maya Binary (.mb)"])
-            general_layout.addRow("Default File Type:", self.pref_default_filetype)
-            
-            # Auto-save settings
+            self.pref_default_filetype.setToolTip("Maya ASCII (.ma): Human-readable, larger file size, better for version control\nMaya Binary (.mb): Smaller file size, faster to save/load")
+            filetype_layout.addWidget(filetype_label)
+            filetype_layout.addWidget(self.pref_default_filetype)
+            filetype_layout.addStretch()
+            saving_layout.addLayout(filetype_layout)
+            saving_layout.addWidget(create_help_label("Maya ASCII is recommended for projects using version control. Binary files are smaller and faster."))
+
+            # Auto-increment version
+            self.pref_auto_increment = QCheckBox("Auto-increment version number on Save Plus")
+            self.pref_auto_increment.setChecked(True)
+            self.pref_auto_increment.setToolTip("Automatically increase the version number (v01 → v02) when using Save Plus")
+            saving_layout.addWidget(self.pref_auto_increment)
+            saving_layout.addWidget(create_help_label("When enabled, clicking 'Save Plus' will automatically increment the version number in your filename."))
+
+            # Show save confirmation
+            self.pref_show_confirmation = QCheckBox("Show confirmation dialog after saving")
+            self.pref_show_confirmation.setChecked(False)
+            self.pref_show_confirmation.setToolTip("Display a confirmation message after each successful save")
+            saving_layout.addWidget(self.pref_show_confirmation)
+            saving_layout.addWidget(create_help_label("Enable this to see a popup confirmation after each save operation."))
+
+            pref_container_layout.addWidget(saving_group)
+
+            # ============================================================
+            # SAVE REMINDERS SECTION
+            # ============================================================
+            reminders_group = QGroupBox("Save Reminders")
+            reminders_group.setToolTip("Configure automatic save reminder notifications")
+            reminders_layout = QVBoxLayout(reminders_group)
+            reminders_layout.setSpacing(2)
+
+            # Auto-save interval
+            interval_layout = QHBoxLayout()
+            interval_label = QLabel("Reminder Interval:")
+            interval_label.setFixedWidth(150)
+            interval_label.setToolTip("How often to show a save reminder when working")
             self.pref_auto_save_interval = QSpinBox()
             self.pref_auto_save_interval.setRange(1, 60)
             self.pref_auto_save_interval.setValue(15)
             self.pref_auto_save_interval.setSuffix(" minutes")
-            self.pref_auto_save_interval.setToolTip("Time between save reminders")
-            general_layout.addRow("Auto-save Interval:", self.pref_auto_save_interval)
-            
-            # Auto-backup settings
-            self.pref_enable_auto_backup = QCheckBox("Enable auto-backup")
+            self.pref_auto_save_interval.setToolTip("Time between save reminders (1-60 minutes)")
+            self.pref_auto_save_interval.setFixedWidth(100)
+            interval_layout.addWidget(interval_label)
+            interval_layout.addWidget(self.pref_auto_save_interval)
+            interval_layout.addStretch()
+            reminders_layout.addLayout(interval_layout)
+            reminders_layout.addWidget(create_help_label("When save reminders are enabled, you'll be notified after this amount of time passes without saving."))
+
+            # Enable save sound
+            self.pref_enable_sound = QCheckBox("Play sound with save reminders")
+            self.pref_enable_sound.setChecked(False)
+            self.pref_enable_sound.setToolTip("Play an audio notification when a save reminder appears")
+            reminders_layout.addWidget(self.pref_enable_sound)
+            reminders_layout.addWidget(create_help_label("Enable this to hear an audio alert when it's time to save your work."))
+
+            pref_container_layout.addWidget(reminders_group)
+
+            # ============================================================
+            # AUTOMATIC BACKUP SECTION
+            # ============================================================
+            backup_group = QGroupBox("Automatic Backups")
+            backup_group.setToolTip("Configure automatic backup creation")
+            backup_layout = QVBoxLayout(backup_group)
+            backup_layout.setSpacing(2)
+
+            # Enable auto-backup
+            self.pref_enable_auto_backup = QCheckBox("Enable automatic backups")
             self.pref_enable_auto_backup.setChecked(self.load_option_var(self.OPT_VAR_ENABLE_AUTO_BACKUP, False))
-            self.pref_enable_auto_backup.setToolTip("Automatically create backups at specified intervals")
-            
-            auto_backup_layout = QHBoxLayout()
+            self.pref_enable_auto_backup.setToolTip("Automatically create timestamped backup files at regular intervals")
+            backup_layout.addWidget(self.pref_enable_auto_backup)
+            backup_layout.addWidget(create_help_label("When enabled, SavePlus will automatically create backup copies of your scene at the specified interval."))
+
+            # Backup interval
+            backup_interval_layout = QHBoxLayout()
+            backup_interval_label = QLabel("Backup Interval:")
+            backup_interval_label.setFixedWidth(150)
+            backup_interval_label.setToolTip("How often to create automatic backups")
             self.pref_backup_interval = QSpinBox()
             self.pref_backup_interval.setRange(5, 120)
             self.pref_backup_interval.setValue(self.load_option_var(self.OPT_VAR_BACKUP_INTERVAL, 30))
             self.pref_backup_interval.setSuffix(" minutes")
-            auto_backup_layout.addWidget(self.pref_backup_interval)
-            auto_backup_layout.addStretch()
-            
-            general_layout.addRow("", self.pref_enable_auto_backup)
-            general_layout.addRow("Backup Interval:", auto_backup_layout)
-            
-            # Add to preferences layout
-            self.preferences_layout.addWidget(general_group)
-            
-            # Path Preferences
-            paths_group = QGroupBox("Path Settings")
-            paths_layout = QFormLayout(paths_group)
-            
+            self.pref_backup_interval.setToolTip("Time between automatic backups (5-120 minutes)")
+            self.pref_backup_interval.setFixedWidth(100)
+            backup_interval_layout.addWidget(backup_interval_label)
+            backup_interval_layout.addWidget(self.pref_backup_interval)
+            backup_interval_layout.addStretch()
+            backup_layout.addLayout(backup_interval_layout)
+            backup_layout.addWidget(create_help_label("Backups are created in the same folder as your scene file with a timestamp suffix."))
+
+            # Max backups to keep
+            max_backup_layout = QHBoxLayout()
+            max_backup_label = QLabel("Maximum Backups:")
+            max_backup_label.setFixedWidth(150)
+            max_backup_label.setToolTip("Maximum number of backup files to keep per scene")
+            self.pref_max_backups = QSpinBox()
+            self.pref_max_backups.setRange(1, 50)
+            self.pref_max_backups.setValue(self.load_option_var(self.OPT_VAR_MAX_BACKUPS, 10))
+            self.pref_max_backups.setToolTip("Older backups will be automatically deleted when this limit is reached (1-50)")
+            self.pref_max_backups.setFixedWidth(100)
+            max_backup_layout.addWidget(max_backup_label)
+            max_backup_layout.addWidget(self.pref_max_backups)
+            max_backup_layout.addStretch()
+            backup_layout.addLayout(max_backup_layout)
+            backup_layout.addWidget(create_help_label("Old backups are automatically deleted when this limit is exceeded. Set to 0 to keep all backups."))
+
+            # Custom backup location
+            backup_path_layout = QHBoxLayout()
+            backup_path_label = QLabel("Backup Location:")
+            backup_path_label.setFixedWidth(150)
+            backup_path_label.setToolTip("Custom folder for storing backup files (leave empty to use scene folder)")
+            self.pref_backup_location = QLineEdit()
+            self.pref_backup_location.setPlaceholderText("Leave empty to save backups with scene file")
+            self.pref_backup_location.setToolTip("Optional: Specify a custom folder for all backup files")
+            backup_browse = QPushButton("Browse...")
+            backup_browse.setFixedWidth(80)
+            backup_browse.clicked.connect(self.browse_backup_location)
+            backup_path_layout.addWidget(backup_path_label)
+            backup_path_layout.addWidget(self.pref_backup_location)
+            backup_path_layout.addWidget(backup_browse)
+            backup_layout.addLayout(backup_path_layout)
+            backup_layout.addWidget(create_help_label("If left empty, backups are created in the same folder as the original scene file."))
+
+            pref_container_layout.addWidget(backup_group)
+
+            # ============================================================
+            # VERSION NOTES SECTION
+            # ============================================================
+            notes_group = QGroupBox("Version Notes")
+            notes_group.setToolTip("Configure version notes and quick note behavior")
+            notes_layout = QVBoxLayout(notes_group)
+            notes_layout.setSpacing(2)
+
+            # Clear quick note after save
+            self.pref_clear_quick_note = QCheckBox("Clear quick note field after saving")
+            self.pref_clear_quick_note.setChecked(self.load_option_var(self.OPT_VAR_CLEAR_QUICK_NOTE, True))
+            self.pref_clear_quick_note.setToolTip("Automatically clear the quick note input field after a successful save")
+            notes_layout.addWidget(self.pref_clear_quick_note)
+            notes_layout.addWidget(create_help_label("When enabled, the quick note field will be cleared after each save so you can enter a fresh note."))
+
+            # Max history entries
+            history_layout = QHBoxLayout()
+            history_label = QLabel("Max History Entries:")
+            history_label.setFixedWidth(150)
+            history_label.setToolTip("Maximum number of version history entries to display")
+            self.pref_max_history = QSpinBox()
+            self.pref_max_history.setRange(10, 500)
+            self.pref_max_history.setValue(self.load_option_var(self.OPT_VAR_MAX_HISTORY_ENTRIES, 100))
+            self.pref_max_history.setToolTip("Number of previous versions to show in the History tab (10-500)")
+            self.pref_max_history.setFixedWidth(100)
+            history_layout.addWidget(history_label)
+            history_layout.addWidget(self.pref_max_history)
+            history_layout.addStretch()
+            notes_layout.addLayout(history_layout)
+            notes_layout.addWidget(create_help_label("Controls how many version entries are displayed in the History tab. Higher values may slow down loading."))
+
+            pref_container_layout.addWidget(notes_group)
+
+            # ============================================================
+            # FILE PATHS SECTION
+            # ============================================================
+            paths_group = QGroupBox("File Paths")
+            paths_group.setToolTip("Configure default directories for saving files")
+            paths_layout = QVBoxLayout(paths_group)
+            paths_layout.setSpacing(2)
+
             # Default save location
-            default_location = QHBoxLayout()
+            default_path_layout = QHBoxLayout()
+            default_path_label = QLabel("Default Save Location:")
+            default_path_label.setFixedWidth(150)
+            default_path_label.setToolTip("The default directory used when saving new files")
             self.pref_default_path = QLineEdit()
             self.pref_default_path.setPlaceholderText("Default directory for saving files")
+            self.pref_default_path.setToolTip("Files will be saved to this directory by default when no project is set")
             browse_default_button = QPushButton("Browse...")
             browse_default_button.setFixedWidth(80)
             browse_default_button.clicked.connect(self.browse_default_save_location)
-            default_location.addWidget(self.pref_default_path)
-            default_location.addWidget(browse_default_button)
-            
-            paths_layout.addRow("Default Save Location:", default_location)
-            
+            default_path_layout.addWidget(default_path_label)
+            default_path_layout.addWidget(self.pref_default_path)
+            default_path_layout.addWidget(browse_default_button)
+            paths_layout.addLayout(default_path_layout)
+            paths_layout.addWidget(create_help_label("This path is used when saving a new file and no Maya project is set."))
+
             # Project directory
-            project_location = QHBoxLayout()
+            project_path_layout = QHBoxLayout()
+            project_path_label = QLabel("Project Directory:")
+            project_path_label.setFixedWidth(150)
+            project_path_label.setToolTip("The Maya project directory")
             self.pref_project_path = QLineEdit()
             self.pref_project_path.setPlaceholderText("Maya project directory")
+            self.pref_project_path.setToolTip("When 'Respect Project Structure' is enabled, files are saved relative to this project")
             project_browse = QPushButton("Browse...")
             project_browse.setFixedWidth(80)
             project_browse.clicked.connect(self.browse_project_directory)
-            project_location.addWidget(self.pref_project_path)
-            project_location.addWidget(project_browse)
-            
-            paths_layout.addRow("Project Directory:", project_location)
-            
-            # Add to preferences layout
-            self.preferences_layout.addWidget(paths_group)
-            
-            # UI Preferences
-            ui_group = QGroupBox("UI Settings")
-            ui_layout = QFormLayout(ui_group)
-            
+            project_path_layout.addWidget(project_path_label)
+            project_path_layout.addWidget(self.pref_project_path)
+            project_path_layout.addWidget(project_browse)
+            paths_layout.addLayout(project_path_layout)
+            paths_layout.addWidget(create_help_label("The Maya project directory. Use the Project tab to manage and switch projects."))
+
+            pref_container_layout.addWidget(paths_group)
+
+            # ============================================================
+            # USER INTERFACE SECTION
+            # ============================================================
+            ui_group = QGroupBox("User Interface")
+            ui_group.setToolTip("Configure SavePlus interface behavior and default states")
+            ui_layout = QVBoxLayout(ui_group)
+            ui_layout.setSpacing(2)
+
+            ui_layout.addWidget(create_section_header("Default Section States"))
+            ui_layout.addWidget(create_help_label("Choose which sections should be expanded when SavePlus opens:"))
+
             # Default sections expanded
             self.pref_file_expanded = QCheckBox("File Options section expanded by default")
             self.pref_file_expanded.setChecked(True)
-            ui_layout.addRow("", self.pref_file_expanded)
-            
+            self.pref_file_expanded.setToolTip("Show the File Options section expanded when SavePlus opens")
+            ui_layout.addWidget(self.pref_file_expanded)
+
             self.pref_name_expanded = QCheckBox("Name Generator section expanded by default")
-            self.pref_name_expanded.setChecked(False)  # Default to collapsed
-            ui_layout.addRow("", self.pref_name_expanded)
-            
+            self.pref_name_expanded.setChecked(True)
+            self.pref_name_expanded.setToolTip("Show the Name Generator section expanded when SavePlus opens")
+            ui_layout.addWidget(self.pref_name_expanded)
+
             self.pref_log_expanded = QCheckBox("Log Output section expanded by default")
-            self.pref_log_expanded.setChecked(False)  # Default to collapsed
-            ui_layout.addRow("", self.pref_log_expanded)
-            
-            # Add to preferences layout
-            ui_group.setLayout(ui_layout)
-            self.preferences_layout.addWidget(ui_group)
-            
+            self.pref_log_expanded.setChecked(False)
+            self.pref_log_expanded.setToolTip("Show the Log Output section expanded when SavePlus opens")
+            ui_layout.addWidget(self.pref_log_expanded)
+
+            ui_layout.addWidget(create_help_label("Collapsed sections help keep the interface compact. Click the section header to expand/collapse."))
+
+            pref_container_layout.addWidget(ui_group)
+
+            # ============================================================
+            # ABOUT SECTION
+            # ============================================================
+            about_group = QGroupBox("About SavePlus")
+            about_group.setToolTip("Information about SavePlus")
+            about_layout = QVBoxLayout(about_group)
+
+            version_label = QLabel("Version: 1.2.0")
+            version_label.setStyleSheet("color: #AAAAAA; font-size: 11px;")
+            about_layout.addWidget(version_label)
+
+            about_text = QLabel("SavePlus is a comprehensive file versioning and project management tool for Maya.\n\nFeatures include automatic version incrementing, save reminders, automatic backups, version notes, project management, and more.")
+            about_text.setStyleSheet("color: #888888; font-size: 10px;")
+            about_text.setWordWrap(True)
+            about_layout.addWidget(about_text)
+
+            pref_container_layout.addWidget(about_group)
+
             # Add spacer at the bottom
-            self.preferences_layout.addStretch()
-            
-            # Add "Apply Settings" button
+            pref_container_layout.addStretch()
+
+            # Set the container as the scroll area widget
+            pref_scroll.setWidget(pref_container)
+            self.preferences_layout.addWidget(pref_scroll)
+
+            # Add "Apply Settings" and "Reset to Defaults" buttons
+            button_layout = QHBoxLayout()
+
+            reset_button = QPushButton("Reset to Defaults")
+            reset_button.setFixedWidth(120)
+            reset_button.setToolTip("Reset all preferences to their default values")
+            reset_button.clicked.connect(self.reset_preferences_to_defaults)
+
             apply_button = QPushButton("Apply Settings")
             apply_button.setFixedWidth(120)
+            apply_button.setToolTip("Save all preference changes")
             apply_button.clicked.connect(self.save_preferences)
-            apply_button_layout = QHBoxLayout()
-            apply_button_layout.addStretch()
-            apply_button_layout.addWidget(apply_button)
-            
-            self.preferences_layout.addLayout(apply_button_layout)
+            apply_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #0066CC;
+                    color: white;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #0077DD;
+                }
+            """)
+
+            button_layout.addWidget(reset_button)
+            button_layout.addStretch()
+            button_layout.addWidget(apply_button)
+
+            self.preferences_layout.addLayout(button_layout)
             
             # Update filename preview initially
             self.update_filename_preview()
@@ -1669,11 +1908,69 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         directory = QFileDialog.getExistingDirectory(
             self, "Select Project Directory", current_path
         )
-        
+
         if directory:
             self.pref_project_path.setText(directory)
             print(f"Project directory set to: {directory}")
             self.status_bar.showMessage(f"Project directory set to: {directory}", 5000)
+
+    def browse_backup_location(self):
+        """Open file browser to select custom backup location directory"""
+        print("Opening file browser for backup location...")
+        current_path = self.pref_backup_location.text()
+        if not current_path:
+            current_path = self.pref_default_path.text()
+        directory = QFileDialog.getExistingDirectory(
+            self, "Select Backup Location", current_path
+        )
+
+        if directory:
+            self.pref_backup_location.setText(directory)
+            print(f"Backup location set to: {directory}")
+            self.status_bar.showMessage(f"Backup location set to: {directory}", 5000)
+
+    def reset_preferences_to_defaults(self):
+        """Reset all preferences to their default values"""
+        reply = cmds.confirmDialog(
+            title="Reset Preferences",
+            message="Are you sure you want to reset all preferences to their default values?\n\nThis cannot be undone.",
+            button=["Reset", "Cancel"],
+            defaultButton="Cancel",
+            cancelButton="Cancel",
+            dismissString="Cancel"
+        )
+
+        if reply == "Reset":
+            # Reset saving behavior
+            self.pref_default_filetype.setCurrentIndex(0)  # Maya ASCII
+            self.pref_auto_increment.setChecked(True)
+            self.pref_show_confirmation.setChecked(False)
+
+            # Reset save reminders
+            self.pref_auto_save_interval.setValue(15)
+            self.pref_enable_sound.setChecked(False)
+
+            # Reset automatic backups
+            self.pref_enable_auto_backup.setChecked(False)
+            self.pref_backup_interval.setValue(30)
+            self.pref_max_backups.setValue(10)
+            self.pref_backup_location.setText("")
+
+            # Reset version notes
+            self.pref_clear_quick_note.setChecked(True)
+            self.pref_max_history.setValue(100)
+
+            # Reset file paths (keep as-is or clear)
+            # self.pref_default_path.setText("")
+            # self.pref_project_path.setText("")
+
+            # Reset UI preferences
+            self.pref_file_expanded.setChecked(True)
+            self.pref_name_expanded.setChecked(True)
+            self.pref_log_expanded.setChecked(False)
+
+            print("Preferences reset to defaults")
+            self.status_bar.showMessage("Preferences reset to default values. Click 'Apply Settings' to save.", 5000)
 
     def browse_existing_project_directory(self):
         """Open file browser to select an existing project directory"""
@@ -1996,7 +2293,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         version_notes = ""
         if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
             version_notes = self.quick_note_input.text().strip()
-            self.quick_note_input.clear()  # Clear after using
+            # Check preference before clearing
+            should_clear = self.load_option_var(self.OPT_VAR_CLEAR_QUICK_NOTE, True)
+            if should_clear:
+                self.quick_note_input.clear()  # Clear after using
             print(f"Quick note captured: {version_notes}")
         elif self.add_version_notes.isChecked():
             # Only show dialog if no quick note was provided AND checkbox is checked
@@ -2134,7 +2434,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         version_notes = ""
         if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
             version_notes = self.quick_note_input.text().strip()
-            self.quick_note_input.clear()  # Clear after using
+            # Check preference before clearing
+            should_clear = self.load_option_var(self.OPT_VAR_CLEAR_QUICK_NOTE, True)
+            if should_clear:
+                self.quick_note_input.clear()  # Clear after using
             print(f"Quick note captured: {version_notes}")
         elif self.add_version_notes.isChecked():
             # Only show dialog if no quick note was provided AND checkbox is checked
@@ -2875,118 +3178,197 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     def save_preferences(self):
         """Save all preference settings"""
         try:
+            # === SAVING BEHAVIOR ===
             # Save file type preference
             file_type_index = self.pref_default_filetype.currentIndex()
             cmds.optionVar(iv=(self.OPT_VAR_DEFAULT_FILETYPE, file_type_index))
-            
+
+            # Save auto-increment setting
+            if hasattr(self, 'pref_auto_increment'):
+                cmds.optionVar(iv=(self.OPT_VAR_AUTO_INCREMENT_VERSION, int(self.pref_auto_increment.isChecked())))
+
+            # Save show confirmation setting
+            if hasattr(self, 'pref_show_confirmation'):
+                cmds.optionVar(iv=(self.OPT_VAR_SHOW_SAVE_CONFIRMATION, int(self.pref_show_confirmation.isChecked())))
+
+            # === SAVE REMINDERS ===
             # Save auto-save interval
             auto_save_interval = self.pref_auto_save_interval.value()
             cmds.optionVar(iv=(self.OPT_VAR_AUTO_SAVE_INTERVAL, auto_save_interval))
-            
+
             # Sync the reminder interval with the main tab spinner
             if hasattr(self, 'reminder_interval_spinbox'):
                 self.reminder_interval_spinbox.setValue(auto_save_interval)
-            
+
+            # Save sound preference
+            if hasattr(self, 'pref_enable_sound'):
+                cmds.optionVar(iv=(self.OPT_VAR_ENABLE_SAVE_SOUND, int(self.pref_enable_sound.isChecked())))
+
+            # === AUTOMATIC BACKUPS ===
+            # Save auto-backup settings
+            cmds.optionVar(iv=(self.OPT_VAR_ENABLE_AUTO_BACKUP, int(self.pref_enable_auto_backup.isChecked())))
+            cmds.optionVar(iv=(self.OPT_VAR_BACKUP_INTERVAL, self.pref_backup_interval.value()))
+
+            # Save max backups setting
+            if hasattr(self, 'pref_max_backups'):
+                cmds.optionVar(iv=(self.OPT_VAR_MAX_BACKUPS, self.pref_max_backups.value()))
+
+            # Save backup location
+            if hasattr(self, 'pref_backup_location'):
+                cmds.optionVar(sv=(self.OPT_VAR_BACKUP_LOCATION, self.pref_backup_location.text()))
+
+            # === VERSION NOTES ===
+            # Save clear quick note setting
+            if hasattr(self, 'pref_clear_quick_note'):
+                cmds.optionVar(iv=(self.OPT_VAR_CLEAR_QUICK_NOTE, int(self.pref_clear_quick_note.isChecked())))
+
+            # Save max history entries
+            if hasattr(self, 'pref_max_history'):
+                cmds.optionVar(iv=(self.OPT_VAR_MAX_HISTORY_ENTRIES, self.pref_max_history.value()))
+
+            # Save add version notes (from main tab)
+            cmds.optionVar(iv=(self.OPT_VAR_ADD_VERSION_NOTES, int(self.add_version_notes.isChecked())))
+
+            # === FILE PATHS ===
             # Save path preferences
             default_path = self.pref_default_path.text()
             cmds.optionVar(sv=(self.OPT_VAR_DEFAULT_SAVE_PATH, default_path))
-            
+
             project_path = self.pref_project_path.text()
             cmds.optionVar(sv=(self.OPT_VAR_PROJECT_PATH, project_path))
-            
+
+            # Save respect project setting
+            cmds.optionVar(iv=(self.OPT_VAR_RESPECT_PROJECT, int(self.respect_project_structure.isChecked())))
+
+            # === UI PREFERENCES ===
             # Save UI preferences
             cmds.optionVar(iv=(self.OPT_VAR_FILE_EXPANDED, int(self.pref_file_expanded.isChecked())))
             cmds.optionVar(iv=(self.OPT_VAR_NAME_EXPANDED, int(self.pref_name_expanded.isChecked())))
             cmds.optionVar(iv=(self.OPT_VAR_LOG_EXPANDED, int(self.pref_log_expanded.isChecked())))
-            
-            # Save new preferences
-            cmds.optionVar(iv=(self.OPT_VAR_ENABLE_AUTO_BACKUP, int(self.pref_enable_auto_backup.isChecked())))
-            cmds.optionVar(iv=(self.OPT_VAR_BACKUP_INTERVAL, self.pref_backup_interval.value()))
-            cmds.optionVar(iv=(self.OPT_VAR_ADD_VERSION_NOTES, int(self.add_version_notes.isChecked())))
 
-            # Add to save_preferences method
-            cmds.optionVar(iv=(self.OPT_VAR_RESPECT_PROJECT, int(self.respect_project_structure.isChecked())))
-
-            # Update backup timer
+            # Update backup timer based on new settings
             if self.pref_enable_auto_backup.isChecked():
                 if not self.backup_timer.isActive():
                     self.backup_timer.start(60000)
             else:
                 if self.backup_timer.isActive():
                     self.backup_timer.stop()
-            
+
             # Apply UI settings immediately
             self.apply_ui_settings()
-            
+
             print("Preferences saved successfully")
             self.status_bar.showMessage("Preferences saved successfully", 5000)
         except Exception as e:
             error_message = f"Error saving preferences: {e}"
             print(error_message)
+            traceback.print_exc()
             self.status_bar.showMessage(error_message, 5000)
 
-            # Update save location display to reflect new preferences
-            self.update_save_location_display()
+        # Update save location display to reflect new preferences
+        self.update_save_location_display()
     
     def load_preferences(self):
         """Load preference settings"""
         try:
+            # === SAVING BEHAVIOR ===
             # Load file type preference
             if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_FILETYPE):
                 file_type_index = cmds.optionVar(q=self.OPT_VAR_DEFAULT_FILETYPE)
                 self.pref_default_filetype.setCurrentIndex(file_type_index)
-            
+
+            # Load auto-increment setting
+            if hasattr(self, 'pref_auto_increment'):
+                if cmds.optionVar(exists=self.OPT_VAR_AUTO_INCREMENT_VERSION):
+                    self.pref_auto_increment.setChecked(bool(cmds.optionVar(q=self.OPT_VAR_AUTO_INCREMENT_VERSION)))
+
+            # Load show confirmation setting
+            if hasattr(self, 'pref_show_confirmation'):
+                if cmds.optionVar(exists=self.OPT_VAR_SHOW_SAVE_CONFIRMATION):
+                    self.pref_show_confirmation.setChecked(bool(cmds.optionVar(q=self.OPT_VAR_SHOW_SAVE_CONFIRMATION)))
+
+            # === SAVE REMINDERS ===
             # Load auto-save interval
             if cmds.optionVar(exists=self.OPT_VAR_AUTO_SAVE_INTERVAL):
                 auto_save_interval = cmds.optionVar(q=self.OPT_VAR_AUTO_SAVE_INTERVAL)
                 self.pref_auto_save_interval.setValue(auto_save_interval)
-            
-            # Load path preferences
-            if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_SAVE_PATH):
-                default_path = cmds.optionVar(q=self.OPT_VAR_DEFAULT_SAVE_PATH)
-                self.pref_default_path.setText(default_path)
-            
-            if cmds.optionVar(exists=self.OPT_VAR_PROJECT_PATH):
-                project_path = cmds.optionVar(q=self.OPT_VAR_PROJECT_PATH)
-                self.pref_project_path.setText(project_path)
-            
-            # Load UI preferences
-            if cmds.optionVar(exists=self.OPT_VAR_FILE_EXPANDED):
-                file_expanded = bool(cmds.optionVar(q=self.OPT_VAR_FILE_EXPANDED))
-                self.pref_file_expanded.setChecked(file_expanded)
-            
-            if cmds.optionVar(exists=self.OPT_VAR_NAME_EXPANDED):
-                name_expanded = bool(cmds.optionVar(q=self.OPT_VAR_NAME_EXPANDED))
-                self.pref_name_expanded.setChecked(name_expanded)
-            
-            if cmds.optionVar(exists=self.OPT_VAR_LOG_EXPANDED):
-                log_expanded = bool(cmds.optionVar(q=self.OPT_VAR_LOG_EXPANDED))
-                self.pref_log_expanded.setChecked(log_expanded)
-                
-            # Load new preferences
+
+            # Load sound preference
+            if hasattr(self, 'pref_enable_sound'):
+                if cmds.optionVar(exists=self.OPT_VAR_ENABLE_SAVE_SOUND):
+                    self.pref_enable_sound.setChecked(bool(cmds.optionVar(q=self.OPT_VAR_ENABLE_SAVE_SOUND)))
+
+            # === AUTOMATIC BACKUPS ===
+            # Load auto-backup settings
             if cmds.optionVar(exists=self.OPT_VAR_ENABLE_AUTO_BACKUP):
                 enable_auto_backup = bool(cmds.optionVar(q=self.OPT_VAR_ENABLE_AUTO_BACKUP))
                 self.pref_enable_auto_backup.setChecked(enable_auto_backup)
-                
+
             if cmds.optionVar(exists=self.OPT_VAR_BACKUP_INTERVAL):
                 backup_interval = cmds.optionVar(q=self.OPT_VAR_BACKUP_INTERVAL)
                 self.pref_backup_interval.setValue(backup_interval)
-                
+
+            # Load max backups setting
+            if hasattr(self, 'pref_max_backups'):
+                if cmds.optionVar(exists=self.OPT_VAR_MAX_BACKUPS):
+                    self.pref_max_backups.setValue(cmds.optionVar(q=self.OPT_VAR_MAX_BACKUPS))
+
+            # Load backup location
+            if hasattr(self, 'pref_backup_location'):
+                if cmds.optionVar(exists=self.OPT_VAR_BACKUP_LOCATION):
+                    self.pref_backup_location.setText(cmds.optionVar(q=self.OPT_VAR_BACKUP_LOCATION))
+
+            # === VERSION NOTES ===
+            # Load clear quick note setting
+            if hasattr(self, 'pref_clear_quick_note'):
+                if cmds.optionVar(exists=self.OPT_VAR_CLEAR_QUICK_NOTE):
+                    self.pref_clear_quick_note.setChecked(bool(cmds.optionVar(q=self.OPT_VAR_CLEAR_QUICK_NOTE)))
+
+            # Load max history entries
+            if hasattr(self, 'pref_max_history'):
+                if cmds.optionVar(exists=self.OPT_VAR_MAX_HISTORY_ENTRIES):
+                    self.pref_max_history.setValue(cmds.optionVar(q=self.OPT_VAR_MAX_HISTORY_ENTRIES))
+
+            # Load add version notes setting
             if cmds.optionVar(exists=self.OPT_VAR_ADD_VERSION_NOTES):
                 add_version_notes = bool(cmds.optionVar(q=self.OPT_VAR_ADD_VERSION_NOTES))
                 self.add_version_notes.setChecked(add_version_notes)
 
-            # Add to load_preferences method
+            # === FILE PATHS ===
+            # Load path preferences
+            if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_SAVE_PATH):
+                default_path = cmds.optionVar(q=self.OPT_VAR_DEFAULT_SAVE_PATH)
+                self.pref_default_path.setText(default_path)
+
+            if cmds.optionVar(exists=self.OPT_VAR_PROJECT_PATH):
+                project_path = cmds.optionVar(q=self.OPT_VAR_PROJECT_PATH)
+                self.pref_project_path.setText(project_path)
+
+            # Load respect project setting
             if cmds.optionVar(exists=self.OPT_VAR_RESPECT_PROJECT):
                 respect_project = bool(cmds.optionVar(q=self.OPT_VAR_RESPECT_PROJECT))
                 if hasattr(self, 'respect_project_structure'):
                     self.respect_project_structure.setChecked(respect_project)
 
+            # === UI PREFERENCES ===
+            # Load UI preferences
+            if cmds.optionVar(exists=self.OPT_VAR_FILE_EXPANDED):
+                file_expanded = bool(cmds.optionVar(q=self.OPT_VAR_FILE_EXPANDED))
+                self.pref_file_expanded.setChecked(file_expanded)
+
+            if cmds.optionVar(exists=self.OPT_VAR_NAME_EXPANDED):
+                name_expanded = bool(cmds.optionVar(q=self.OPT_VAR_NAME_EXPANDED))
+                self.pref_name_expanded.setChecked(name_expanded)
+
+            if cmds.optionVar(exists=self.OPT_VAR_LOG_EXPANDED):
+                log_expanded = bool(cmds.optionVar(q=self.OPT_VAR_LOG_EXPANDED))
+                self.pref_log_expanded.setChecked(log_expanded)
+
             # Load timed warning preference
             if cmds.optionVar(exists=self.OPT_VAR_ENABLE_TIMED_WARNING):
                 enable_timed_warning = bool(cmds.optionVar(q=self.OPT_VAR_ENABLE_TIMED_WARNING))
                 print(f"[DEBUG] Loading timed warning preference: {enable_timed_warning}")
-                
+
                 # Only update if different to avoid triggering the stateChanged signal
                 if self.enable_timed_warning.isChecked() != enable_timed_warning:
                     self.enable_timed_warning.blockSignals(True)
@@ -2997,6 +3379,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.apply_ui_settings()
         except Exception as e:
             savePlus_core.debug_print(f"Error loading preferences: {e}")
+            traceback.print_exc()
 
         # Initialize save location based on default path
         if cmds.optionVar(exists=self.OPT_VAR_DEFAULT_SAVE_PATH):
