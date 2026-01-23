@@ -297,11 +297,41 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             self.container_layout.addWidget(last_save_container)
 
+            # Quick Note input - placed right under buttons for easy access
+            quick_note_layout = QHBoxLayout()
+            quick_note_layout.setContentsMargins(0, 8, 0, 8)
+            quick_note_layout.setSpacing(8)
+
+            quick_note_label = QLabel("Quick Note:")
+            quick_note_label.setStyleSheet("color: #CCCCCC; font-weight: bold; font-size: 11px;")
+            quick_note_label.setFixedWidth(75)
+            quick_note_layout.addWidget(quick_note_label)
+
+            self.quick_note_input = QLineEdit()
+            self.quick_note_input.setPlaceholderText("Optional: Add a note before saving...")
+            self.quick_note_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #2A2A2A;
+                    border: 1px solid #444444;
+                    border-radius: 4px;
+                    padding: 6px 10px;
+                    color: #FFFFFF;
+                    font-size: 11px;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #0066CC;
+                }
+            """)
+            self.quick_note_input.setToolTip("Type a note here before clicking 'Save Plus'.\n\nThis note will be attached to the saved version for future reference.\n\nLeave empty if no note is needed - this is optional.")
+            quick_note_layout.addWidget(self.quick_note_input)
+
+            self.container_layout.addLayout(quick_note_layout)
+
             # Add a subtle separator between buttons and sections
             separator = QFrame()
             separator.setFrameShape(QFrame.HLine)
             separator.setFrameShadow(QFrame.Sunken)
-            separator.setStyleSheet("background-color: #e0e0e0; max-height: 1px;")
+            separator.setStyleSheet("background-color: #444444; max-height: 1px;")
             self.container_layout.addWidget(separator)
             self.container_layout.addSpacing(10)  # Add space after separator
 
@@ -697,46 +727,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Add name_gen_section toggled signal connection
             self.name_gen_section.toggled.connect(self.adjust_window_size)
-            
-            # Add Quick Notes section - more prominent with frame and helper text
-            quick_notes_section = QWidget()
-            quick_notes_section_layout = QVBoxLayout(quick_notes_section)
-            quick_notes_section_layout.setContentsMargins(0, 5, 0, 5)
-            quick_notes_section_layout.setSpacing(4)
 
-            # Label with icon indicator
-            quick_notes_header = QHBoxLayout()
-            quick_notes_label = QLabel("Quick Note:")
-            quick_notes_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
-            quick_notes_header.addWidget(quick_notes_label)
-            quick_notes_header.addStretch()
-            quick_notes_section_layout.addLayout(quick_notes_header)
-
-            # Input field with styling
-            self.quick_note_input = QLineEdit()
-            self.quick_note_input.setPlaceholderText("Enter a note to attach to your next save (optional)...")
-            self.quick_note_input.setStyleSheet("""
-                QLineEdit {
-                    background-color: #2A2A2A;
-                    border: 1px solid #444444;
-                    border-radius: 4px;
-                    padding: 8px;
-                    color: #FFFFFF;
-                }
-                QLineEdit:focus {
-                    border: 1px solid #0066CC;
-                }
-            """)
-            self.quick_note_input.setToolTip("Type a note here before clicking 'Save Plus' - it will be automatically attached to the saved version")
-            quick_notes_section_layout.addWidget(self.quick_note_input)
-
-            # Helper text below the input
-            quick_notes_helper = QLabel("Tip: This note will be saved with your next version. Leave empty if not needed.")
-            quick_notes_helper.setStyleSheet("color: #666666; font-size: 9px; font-style: italic;")
-            quick_notes_section_layout.addWidget(quick_notes_helper)
-
-            self.container_layout.addWidget(quick_notes_section)
-            
             # Create Log section (collapsed by default)
             self.log_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Log Output", collapsed=True)
             self.log_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
