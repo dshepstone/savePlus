@@ -1775,6 +1775,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             QMessageBox.warning(self, "No Project", "No valid project directory is currently set.")
             return
 
+        # Strip trailing slashes to ensure os.path.basename works correctly
+        project_dir = project_dir.rstrip('/\\')
         parent_dir = os.path.dirname(project_dir)
         old_name = os.path.basename(project_dir)
         new_path = os.path.join(parent_dir, new_name)
