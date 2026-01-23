@@ -1759,6 +1759,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
     def rename_current_project(self):
         """Rename the current project folder"""
+        import shutil
+
         new_name = self.rename_project_new_name.text().strip()
         if not new_name:
             QMessageBox.warning(self, "Missing Name", "Please enter a new project name.")
@@ -1771,25 +1773,45 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             return
 
         project_dir = savePlus_core.get_maya_project_directory()
-        if not project_dir or not os.path.isdir(project_dir):
+        if not project_dir:
             QMessageBox.warning(self, "No Project", "No valid project directory is currently set.")
             return
 
         # Strip trailing slashes to ensure os.path.basename works correctly
         project_dir = project_dir.rstrip('/\\')
+
+        if not os.path.isdir(project_dir):
+            QMessageBox.warning(self, "No Project", f"Project directory does not exist:\n{project_dir}")
+            return
+
         parent_dir = os.path.dirname(project_dir)
         old_name = os.path.basename(project_dir)
         new_path = os.path.join(parent_dir, new_name)
 
+        # Debug output
+        print(f"[SavePlus] Rename project:")
+        print(f"  Old path: {project_dir}")
+        print(f"  Old name: {old_name}")
+        print(f"  New path: {new_path}")
+        print(f"  New name: {new_name}")
+
+        if not old_name:
+            QMessageBox.warning(self, "Error", "Could not determine current project folder name.")
+            return
+
+        if old_name == new_name:
+            QMessageBox.information(self, "No Change", "The new name is the same as the current name.")
+            return
+
         if os.path.exists(new_path):
-            QMessageBox.warning(self, "Folder Exists", f"A folder named '{new_name}' already exists.")
+            QMessageBox.warning(self, "Folder Exists", f"A folder named '{new_name}' already exists in:\n{parent_dir}")
             return
 
         # Confirm the rename
         confirm = QMessageBox.question(
             self,
             "Confirm Rename",
-            f"Rename project folder from:\n'{old_name}'\nto:\n'{new_name}'?\n\nNote: This will close the current scene.",
+            f"Rename project folder from:\n'{old_name}'\nto:\n'{new_name}'?\n\nThis will close the current scene.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
@@ -1811,20 +1833,54 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 elif save_result == QMessageBox.Yes:
                     cmds.file(save=True)
 
-            # Create a new scene to release file locks
+            # Create a new empty scene to release all file locks
+            print("[SavePlus] Creating new scene to release file locks...")
             cmds.file(new=True, force=True)
 
-            # Rename the folder
-            os.rename(project_dir, new_path)
+            # Clear Maya's workspace cache by setting to parent directory first
+            print("[SavePlus] Clearing Maya workspace cache...")
+            try:
+                mel.eval(f'setProject "{savePlus_core.normalize_path(parent_dir)}"')
+            except Exception as e:
+                print(f"[SavePlus] Warning clearing workspace: {e}")
 
-            # Set the new project path
-            self.set_project_from_path(new_path)
+            # Small delay to ensure Maya releases handles
+            import time as time_module
+            time_module.sleep(0.3)
+
+            # Rename the folder using shutil.move for better cross-platform support
+            print(f"[SavePlus] Moving folder...")
+            shutil.move(project_dir, new_path)
+            print(f"[SavePlus] Folder renamed successfully to: {new_path}")
+
+            # Set the renamed folder as the new project using MEL
+            normalized_new_path = savePlus_core.normalize_path(new_path)
+            print(f"[SavePlus] Setting new project via MEL: {normalized_new_path}")
+            mel.eval(f'setProject "{normalized_new_path}"')
+
+            # Verify the project was set correctly
+            new_project = savePlus_core.get_maya_project_directory()
+            if new_project:
+                new_project = new_project.rstrip('/\\')
+            print(f"[SavePlus] Verified current project: {new_project}")
+
+            # Update UI
             self.rename_project_new_name.clear()
+            self.project_directory = savePlus_core.get_maya_project_directory()
+            self.update_project_display()
             self.status_bar.showMessage(f"Project renamed to: {new_name}", 5000)
 
+            QMessageBox.information(self, "Success", f"Project folder renamed to:\n{new_name}")
+
+        except PermissionError as e:
+            print(f"[SavePlus] Permission error: {e}")
+            QMessageBox.critical(self, "Permission Denied",
+                f"Could not rename project folder.\nFiles may still be in use.\n\nError: {e}")
         except Exception as e:
-            savePlus_core.debug_print(f"Error renaming project: {e}")
-            QMessageBox.critical(self, "Rename Failed", f"Could not rename project folder: {e}")
+            print(f"[SavePlus] Error renaming project: {e}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "Rename Failed", f"Could not rename project folder:\n{e}")
 
     def save_plus(self):
         """Execute the save plus operation with the specified filename"""
