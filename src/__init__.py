@@ -3,7 +3,7 @@ SavePlus - File versioning tool for Maya 2025
 Package initialization file
 """
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 __author__ = "Original MEL script by Neal Singleton, Python port by SavePlus Team"
 
 # Import key modules
