@@ -252,12 +252,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             save_button.setMinimumHeight(40)
             save_button.setStyleSheet(button_style)
             save_button.clicked.connect(self.save_plus)
+            save_button.setToolTip("Increment the version number and save.\n\nExample: scene_v01.ma → scene_v02.ma\n\nAny quick note entered below will be attached to this version.")
 
             save_new_button = QPushButton("Save As New (Ctrl+Shift+S)")
             save_new_button.setIcon(self.style().standardIcon(QStyle.SP_FileIcon))
             save_new_button.setMinimumHeight(40)
             save_new_button.setStyleSheet(button_style)
             save_new_button.clicked.connect(self.save_as_new)
+            save_new_button.setToolTip("Save with the exact filename shown above.\n\nUseful for starting a new file or saving to a specific name without incrementing.")
 
             # New backup button
             backup_button = QPushButton("Create Backup (Ctrl+B)")
@@ -265,7 +267,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             backup_button.setMinimumHeight(40)
             backup_button.setStyleSheet(button_style)
             backup_button.clicked.connect(self.create_backup)
-            backup_button.setToolTip("Create a backup copy of the current file")
+            backup_button.setToolTip("Create a timestamped backup copy of the current file.\n\nExample: scene_v01_backup_20260123_143022.ma\n\nUseful before making major changes.")
 
             buttons_layout.addWidget(save_button)
             buttons_layout.addWidget(save_new_button)
@@ -330,6 +332,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.filename_input.textChanged.connect(self.update_version_preview)
             self.filename_input.setStyleSheet("padding: 6px;")
             self.filename_input.home(False)  # Ensure text starts from beginning
+            self.filename_input.setToolTip("Enter the filename for your scene.\n\nThe version number will be automatically incremented when using 'Save Plus'.\n\nExample: my_scene_v01 will become my_scene_v02")
             self.current_full_path = ""  # Store full path separately from display name
 
             # Get current file name if available
@@ -375,7 +378,14 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             save_path_frame = QFrame()
             save_path_frame.setFrameShape(QFrame.StyledPanel)
             save_path_frame.setFrameShadow(QFrame.Sunken)
-            save_path_frame.setStyleSheet("background-color: #3A3A3A; padding: 6px; border-radius: 4px;")
+            save_path_frame.setStyleSheet("""
+                QFrame {
+                    background-color: #2A2A2A;
+                    border: 1px solid #444444;
+                    border-radius: 4px;
+                    padding: 4px;
+                }
+            """)
             save_path_layout = QHBoxLayout(save_path_frame)
             save_path_layout.setContentsMargins(6, 2, 6, 2)
             save_path_layout.setSpacing(3)
@@ -466,6 +476,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.filetype_combo.setStyleSheet("padding: 6px;")
             self.filetype_combo.currentIndexChanged.connect(self.update_filename_preview)
             self.filetype_combo.currentIndexChanged.connect(self.update_version_preview)
+            self.filetype_combo.setToolTip("Choose the file format for saving:\n\n• Maya ASCII (.ma): Human-readable, larger file size, good for version control\n• Maya Binary (.mb): Smaller file size, faster to save/load")
             file_type_layout.addWidget(self.filetype_combo)
             file_layout.addWidget(file_type_section)
 
@@ -480,6 +491,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.use_current_dir.setChecked(True)
             self.use_current_dir.setStyleSheet("padding: 2px;")
             self.use_current_dir.toggled.connect(self.update_save_location_display)
+            self.use_current_dir.setToolTip("When checked, saves will go to the same folder as the currently open file.\n\nUncheck to use a custom directory selected with the Browse button.")
             checkbox_layout.addWidget(self.use_current_dir)
 
             # Add option to respect project structure
@@ -527,6 +539,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.enable_timed_warning.setChecked(False)  # Explicitly set to False by default
             self.enable_timed_warning.stateChanged.connect(self.toggle_timed_warning)
             self.enable_timed_warning.setStyleSheet("padding: 2px;")
+            self.enable_timed_warning.setToolTip("Get a reminder to save your work at regular intervals.\n\nThe status indicator will change color:\n• Green: Recently saved\n• Yellow: Getting close to reminder time\n• Red: Time to save!")
             save_reminder_layout.addWidget(self.enable_timed_warning)
 
             # Add spinner for reminder interval
@@ -545,7 +558,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add version notes option
             self.add_version_notes = QCheckBox("Add version notes when saving")
             self.add_version_notes.setChecked(self.load_option_var(self.OPT_VAR_ADD_VERSION_NOTES, False))
-            self.add_version_notes.setToolTip("Add notes for each version to track changes")
+            self.add_version_notes.setToolTip("When enabled, you'll be prompted to add notes when saving.\n\nNotes help you remember what changes were made in each version.\n\nYou can also use the Quick Note field above for faster note entry.")
             self.add_version_notes.setStyleSheet("padding: 2px;")
             reminder_layout.addWidget(self.add_version_notes)
 
@@ -685,17 +698,44 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add name_gen_section toggled signal connection
             self.name_gen_section.toggled.connect(self.adjust_window_size)
             
-            # Add Quick Notes section
-            quick_notes_layout = QHBoxLayout()
-            quick_notes_layout.setContentsMargins(0, 5, 0, 5)
+            # Add Quick Notes section - more prominent with frame and helper text
+            quick_notes_section = QWidget()
+            quick_notes_section_layout = QVBoxLayout(quick_notes_section)
+            quick_notes_section_layout.setContentsMargins(0, 5, 0, 5)
+            quick_notes_section_layout.setSpacing(4)
 
+            # Label with icon indicator
+            quick_notes_header = QHBoxLayout()
+            quick_notes_label = QLabel("Quick Note:")
+            quick_notes_label.setStyleSheet("color: #CCCCCC; font-weight: bold;")
+            quick_notes_header.addWidget(quick_notes_label)
+            quick_notes_header.addStretch()
+            quick_notes_section_layout.addLayout(quick_notes_header)
+
+            # Input field with styling
             self.quick_note_input = QLineEdit()
-            self.quick_note_input.setPlaceholderText("Add a quick note for next save...")
+            self.quick_note_input.setPlaceholderText("Enter a note to attach to your next save (optional)...")
+            self.quick_note_input.setStyleSheet("""
+                QLineEdit {
+                    background-color: #2A2A2A;
+                    border: 1px solid #444444;
+                    border-radius: 4px;
+                    padding: 8px;
+                    color: #FFFFFF;
+                }
+                QLineEdit:focus {
+                    border: 1px solid #0066CC;
+                }
+            """)
+            self.quick_note_input.setToolTip("Type a note here before clicking 'Save Plus' - it will be automatically attached to the saved version")
+            quick_notes_section_layout.addWidget(self.quick_note_input)
 
-            quick_notes_layout.addWidget(QLabel("Quick Note:"))
-            quick_notes_layout.addWidget(self.quick_note_input)
+            # Helper text below the input
+            quick_notes_helper = QLabel("Tip: This note will be saved with your next version. Leave empty if not needed.")
+            quick_notes_helper.setStyleSheet("color: #666666; font-size: 9px; font-style: italic;")
+            quick_notes_section_layout.addWidget(quick_notes_helper)
 
-            self.container_layout.addLayout(quick_notes_layout)
+            self.container_layout.addWidget(quick_notes_section)
             
             # Create Log section (collapsed by default)
             self.log_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Log Output", collapsed=True)
@@ -872,7 +912,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Create Recent Files group at the top of History tab
             recent_files_group = QGroupBox("Recent Files")
             recent_files_layout = QVBoxLayout(recent_files_group)
-            
+
+            # Helper text for recent files
+            recent_helper = QLabel("Double-click a file to open it. Hover over entries to see full path and notes.")
+            recent_helper.setStyleSheet("color: #666666; font-size: 9px; font-style: italic; padding: 2px;")
+            recent_files_layout.addWidget(recent_helper)
+
             # Recent files list
             self.recent_files_list = QListWidget()
             self.recent_files_list.setAlternatingRowColors(True)
@@ -882,24 +927,36 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Recent files controls
             recent_controls_layout = QHBoxLayout()
-            
+
             refresh_button = QPushButton("Refresh")
+            refresh_button.setToolTip("Refresh the recent files list")
             refresh_button.clicked.connect(self.populate_recent_files)
-            
+
+            clear_recent_button = QPushButton("Clear Recent")
+            clear_recent_button.setToolTip("Clear only the recent files list (keeps version history)")
+            clear_recent_button.clicked.connect(self.clear_recent_files)
+
             open_button = QPushButton("Open Selected")
+            open_button.setToolTip("Open the selected file in Maya")
             open_button.clicked.connect(self.open_selected_file)
-            
+
             recent_controls_layout.addWidget(refresh_button)
+            recent_controls_layout.addWidget(clear_recent_button)
             recent_controls_layout.addStretch()
             recent_controls_layout.addWidget(open_button)
-            
+
             recent_files_layout.addWidget(self.recent_files_list)
             recent_files_layout.addLayout(recent_controls_layout)
             
             # Create a table for version history
             version_history_group = QGroupBox("Version History")
             version_history_layout = QVBoxLayout(version_history_group)
-            
+
+            # Helper text for version history
+            history_helper = QLabel("Shows all saved versions of the current file. Select a row and click 'View Notes' to see or edit notes in a larger window.")
+            history_helper.setStyleSheet("color: #666666; font-size: 9px; font-style: italic; padding: 2px;")
+            version_history_layout.addWidget(history_helper)
+
             self.history_table = QTableWidget()
             self.history_table.setColumnCount(4)
             self.history_table.setHorizontalHeaderLabels(["Filename", "Date", "Path", "Notes"])
@@ -918,26 +975,35 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # History controls
             history_controls = QHBoxLayout()
-            
+
             refresh_history_button = QPushButton("Refresh")
+            refresh_history_button.setToolTip("Refresh the version history table")
             refresh_history_button.clicked.connect(self.populate_history)
-            
+
             clear_history_button = QPushButton("Clear History")
+            clear_history_button.setToolTip("Clear all version history data (cannot be undone)")
             clear_history_button.clicked.connect(self.clear_history)
 
+            # Project Browser button - shows all files in project scenes folder
+            browse_project_button = QPushButton("Browse Project")
+            browse_project_button.setToolTip("Browse all scene files in the project's scenes folder")
+            browse_project_button.clicked.connect(self.open_project_browser)
+
             open_history_button = QPushButton("Open Selected")
+            open_history_button.setToolTip("Open the selected version in Maya")
             open_history_button.clicked.connect(self.open_selected_history_file)
 
             view_notes_button = QPushButton("View Notes")
-            view_notes_button.setToolTip("View or edit notes for the selected version")
+            view_notes_button.setToolTip("View or edit notes for the selected version in a larger window")
             view_notes_button.clicked.connect(self.view_history_notes)
 
             export_history_button = QPushButton("Export History")
+            export_history_button.setToolTip("Export version history to a text file for backup or review")
             export_history_button.clicked.connect(self.export_history)
-            export_history_button.setToolTip("Export version history to a text file")
-            
+
             history_controls.addWidget(refresh_history_button)
             history_controls.addWidget(clear_history_button)
+            history_controls.addWidget(browse_project_button)
             history_controls.addStretch()
             history_controls.addWidget(view_notes_button)
             history_controls.addWidget(open_history_button)
@@ -1571,19 +1637,19 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         if hasattr(self, 'save_location_label'):
             # Use the new get_save_directory method to determine save location
             save_dir = self.get_save_directory()
-            
+
             # Display truncated path but set full path as tooltip
             truncated_path = truncate_path(save_dir, 40)  # Adjust max_length as needed
             self.save_location_label.setText(truncated_path)
-            self.save_location_label.setToolTip(save_dir)  # Show full path on hover
-            
-            # Update style based on whether it's a project path
+            self.save_location_label.setToolTip(f"Full path: {save_dir}\n\nClick the folder icon to open this location.")
+
+            # Update style based on whether it's a project path - use dark background for consistency
             if self.project_directory and savePlus_core.is_path_in_project(save_dir, self.project_directory):
-                # Green text for project paths
-                self.save_location_label.setStyleSheet("color: #4CAF50; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
+                # Green text for project paths with dark background
+                self.save_location_label.setStyleSheet("color: #4CAF50; font-size: 10px; background-color: transparent; padding: 3px; border-radius: 2px;")
             else:
-                # Blue text for non-project paths (original style)
-                self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: #f5f5f5; padding: 3px; border-radius: 2px;")
+                # Blue text for non-project paths with dark background
+                self.save_location_label.setStyleSheet("color: #0066CC; font-size: 10px; background-color: transparent; padding: 3px; border-radius: 2px;")
 
     def browse_default_save_location(self):
         """Open file browser to select default save location directory"""
@@ -2304,7 +2370,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             print(message)
 
     def view_history_notes(self):
-        """View or edit notes for the selected history entry"""
+        """View or edit notes for the selected history entry in an enlarged window"""
         selected_rows = self.history_table.selectedItems()
         if not selected_rows:
             QMessageBox.information(self, "No Selection", "Please select a version from the history table.")
@@ -2315,43 +2381,23 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         filename = self.history_table.item(row, 0).text()
         current_notes = self.history_table.item(row, 3).text()
 
-        # Create a dialog to view/edit notes
-        dialog = QDialog(self)
-        dialog.setWindowTitle(f"Notes - {filename}")
-        dialog.setMinimumWidth(400)
-        dialog.setMinimumHeight(200)
+        # Use the new EnlargedNotesViewerDialog for better readability
+        dialog = savePlus_ui_components.EnlargedNotesViewerDialog(
+            self,
+            filename=filename,
+            notes=current_notes,
+            file_path=file_path,
+            editable=True
+        )
 
-        layout = QVBoxLayout(dialog)
-
-        # Notes text area
-        from PySide6.QtWidgets import QPlainTextEdit
-        notes_edit = QPlainTextEdit()
-        notes_edit.setPlainText(current_notes)
-        notes_edit.setPlaceholderText("Enter notes for this version...")
-        layout.addWidget(notes_edit)
-
-        # Buttons
-        buttons_layout = QHBoxLayout()
-        save_button = QPushButton("Save Notes")
-        cancel_button = QPushButton("Cancel")
-        buttons_layout.addStretch()
-        buttons_layout.addWidget(save_button)
-        buttons_layout.addWidget(cancel_button)
-        layout.addLayout(buttons_layout)
-
-        def save_notes():
-            new_notes = notes_edit.toPlainText().strip()
+        if dialog.exec() == QDialog.Accepted:
+            new_notes = dialog.get_notes().strip()
             # Update the notes in the version history
             if self.version_history.update_notes(file_path, new_notes):
                 self.history_table.item(row, 3).setText(new_notes)
-                self.status_bar.showMessage("Notes updated", 3000)
-                dialog.accept()
+                self.status_bar.showMessage("Notes updated successfully", 3000)
             else:
                 QMessageBox.warning(self, "Error", "Could not update notes.")
-
-        save_button.clicked.connect(save_notes)
-        cancel_button.clicked.connect(dialog.reject)
-        dialog.exec()
 
     def export_history(self):
         """Export version history to a text file"""
@@ -2383,16 +2429,59 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )
-        
+
         if confirm != QMessageBox.Yes:
             return
-        
+
         if self.version_history.clear_history():
             self.populate_history()
             self.populate_recent_files()
             self.status_bar.showMessage("History cleared", 5000)
         else:
             self.status_bar.showMessage("Failed to clear history", 5000)
+
+    def clear_recent_files(self):
+        """Clear only the recent files list (not all history data)"""
+        confirm = QMessageBox.question(
+            self,
+            "Clear Recent Files",
+            "This will clear the recent files list display.\n\nNote: This does not delete the actual history data, "
+            "just refreshes the recent files view.\n\nContinue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+
+        if confirm != QMessageBox.Yes:
+            return
+
+        self.recent_files_list.clear()
+        self.status_bar.showMessage("Recent files list cleared", 3000)
+
+    def open_project_browser(self):
+        """Open the Project Scenes Browser dialog to browse all scenes in the project"""
+        # Get current project path
+        project_path = self.project_directory or savePlus_core.get_maya_project_directory()
+
+        if not project_path:
+            QMessageBox.warning(
+                self,
+                "No Project",
+                "No Maya project is currently set.\n\n"
+                "Please set a project using the Project tab or Maya's File > Set Project menu."
+            )
+            return
+
+        # Open the Project Browser dialog
+        dialog = savePlus_ui_components.ProjectScenesBrowserDialog(
+            self,
+            project_path=project_path,
+            version_history=self.version_history
+        )
+
+        if dialog.exec() == QDialog.Accepted:
+            selected_file = dialog.get_selected_file()
+            if selected_file and os.path.exists(selected_file):
+                self.open_maya_file(selected_file)
     
     def on_tab_changed(self, index):
         """Handle tab changed event"""

@@ -365,3 +365,399 @@ class ZurbriggStyleCollapsibleFrame(QWidget):
         """Set the collapsed state directly"""
         if self.collapsed != collapsed:
             self.toggle_content()
+
+
+class EnlargedNotesViewerDialog(QDialog):
+    """Dialog for viewing notes in a larger, more readable window"""
+
+    def __init__(self, parent=None, filename="", notes="", file_path="", editable=True):
+        super(EnlargedNotesViewerDialog, self).__init__(parent)
+
+        self.file_path = file_path
+        self.notes_modified = False
+
+        self.setWindowTitle(f"Notes - {filename}")
+        self.setMinimumWidth(600)
+        self.setMinimumHeight(400)
+        self.resize(700, 500)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # File info header
+        info_layout = QVBoxLayout()
+
+        filename_label = QLabel(f"<b>File:</b> {filename}")
+        filename_label.setStyleSheet("font-size: 12px; color: #CCCCCC;")
+        info_layout.addWidget(filename_label)
+
+        if file_path:
+            path_label = QLabel(f"<b>Path:</b> {file_path}")
+            path_label.setStyleSheet("font-size: 10px; color: #888888;")
+            path_label.setWordWrap(True)
+            info_layout.addWidget(path_label)
+
+        layout.addLayout(info_layout)
+
+        # Separator
+        separator = QWidget()
+        separator.setFixedHeight(1)
+        separator.setStyleSheet("background-color: #444444;")
+        layout.addWidget(separator)
+
+        # Notes header
+        notes_header = QLabel("Version Notes:")
+        notes_header.setStyleSheet("font-weight: bold; color: #CCCCCC; font-size: 12px;")
+        layout.addWidget(notes_header)
+
+        # Notes text area
+        self.notes_edit = QPlainTextEdit()
+        self.notes_edit.setPlainText(notes)
+        self.notes_edit.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: #2A2A2A;
+                color: #FFFFFF;
+                border: 1px solid #444444;
+                border-radius: 4px;
+                padding: 10px;
+                font-size: 12px;
+                line-height: 1.5;
+            }
+        """)
+        if not editable:
+            self.notes_edit.setReadOnly(True)
+        else:
+            self.notes_edit.textChanged.connect(self._on_text_changed)
+        layout.addWidget(self.notes_edit)
+
+        # Helper text
+        if editable:
+            helper_text = QLabel("Edit notes above and click 'Save Notes' to update.")
+            helper_text.setStyleSheet("color: #666666; font-size: 10px; font-style: italic;")
+            layout.addWidget(helper_text)
+
+        # Buttons
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addStretch()
+
+        if editable:
+            save_button = QPushButton("Save Notes")
+            save_button.setToolTip("Save changes to the notes")
+            save_button.clicked.connect(self.accept)
+            buttons_layout.addWidget(save_button)
+
+        close_button = QPushButton("Close")
+        close_button.setToolTip("Close this window")
+        close_button.clicked.connect(self.reject)
+        buttons_layout.addWidget(close_button)
+
+        layout.addLayout(buttons_layout)
+
+    def _on_text_changed(self):
+        """Track when text has been modified"""
+        self.notes_modified = True
+
+    def get_notes(self):
+        """Return the current notes text"""
+        return self.notes_edit.toPlainText()
+
+    def has_changes(self):
+        """Check if notes have been modified"""
+        return self.notes_modified
+
+
+class ProjectScenesBrowserDialog(QDialog):
+    """Dialog for browsing and opening scenes from the project's scenes folder"""
+
+    def __init__(self, parent=None, project_path="", version_history=None):
+        super(ProjectScenesBrowserDialog, self).__init__(parent)
+
+        self.project_path = project_path
+        self.version_history = version_history
+        self.scenes_path = ""
+
+        self.setWindowTitle("Project Scenes Browser")
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(500)
+        self.resize(900, 600)
+
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # Header with project info
+        header_layout = QHBoxLayout()
+
+        project_label = QLabel(f"<b>Project:</b> {project_path}")
+        project_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
+        project_label.setWordWrap(True)
+        header_layout.addWidget(project_label, 1)
+
+        refresh_btn = QPushButton("Refresh")
+        refresh_btn.setToolTip("Refresh the file list")
+        refresh_btn.clicked.connect(self.refresh_file_list)
+        header_layout.addWidget(refresh_btn)
+
+        layout.addLayout(header_layout)
+
+        # Helper text
+        helper_text = QLabel("Browse and open Maya scene files from your project's scenes folder. Double-click to open a file.")
+        helper_text.setStyleSheet("color: #888888; font-size: 10px; font-style: italic;")
+        layout.addWidget(helper_text)
+
+        # Main content area with splitter
+        from PySide6.QtWidgets import QSplitter
+        splitter = QSplitter(Qt.Horizontal)
+
+        # Left side - File list
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+
+        files_label = QLabel("Scene Files:")
+        files_label.setStyleSheet("font-weight: bold; color: #CCCCCC;")
+        left_layout.addWidget(files_label)
+
+        from PySide6.QtWidgets import QListWidget
+        self.files_list = QListWidget()
+        self.files_list.setAlternatingRowColors(True)
+        self.files_list.setStyleSheet("""
+            QListWidget {
+                background-color: #2A2A2A;
+                border: 1px solid #444444;
+                border-radius: 4px;
+            }
+            QListWidget::item {
+                padding: 5px;
+            }
+            QListWidget::item:selected {
+                background-color: #3A5A8A;
+            }
+            QListWidget::item:hover {
+                background-color: #3A3A3A;
+            }
+        """)
+        self.files_list.itemSelectionChanged.connect(self._on_selection_changed)
+        self.files_list.itemDoubleClicked.connect(self._on_double_click)
+        left_layout.addWidget(self.files_list)
+
+        splitter.addWidget(left_widget)
+
+        # Right side - File info and notes
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+
+        info_label = QLabel("File Information:")
+        info_label.setStyleSheet("font-weight: bold; color: #CCCCCC;")
+        right_layout.addWidget(info_label)
+
+        # File details
+        self.file_info_label = QLabel("Select a file to view details")
+        self.file_info_label.setStyleSheet("color: #888888; padding: 10px; background-color: #2A2A2A; border-radius: 4px;")
+        self.file_info_label.setWordWrap(True)
+        self.file_info_label.setMinimumHeight(80)
+        right_layout.addWidget(self.file_info_label)
+
+        notes_label = QLabel("Notes:")
+        notes_label.setStyleSheet("font-weight: bold; color: #CCCCCC;")
+        right_layout.addWidget(notes_label)
+
+        self.notes_display = QPlainTextEdit()
+        self.notes_display.setReadOnly(True)
+        self.notes_display.setPlaceholderText("No notes available for this file")
+        self.notes_display.setStyleSheet("""
+            QPlainTextEdit {
+                background-color: #2A2A2A;
+                color: #FFFFFF;
+                border: 1px solid #444444;
+                border-radius: 4px;
+                padding: 10px;
+            }
+        """)
+        right_layout.addWidget(self.notes_display)
+
+        # View full notes button
+        view_notes_btn = QPushButton("View Notes in Full Window")
+        view_notes_btn.setToolTip("Open notes in a larger, easier to read window")
+        view_notes_btn.clicked.connect(self._view_full_notes)
+        right_layout.addWidget(view_notes_btn)
+
+        splitter.addWidget(right_widget)
+        splitter.setSizes([400, 400])
+
+        layout.addWidget(splitter)
+
+        # Bottom buttons
+        buttons_layout = QHBoxLayout()
+
+        open_folder_btn = QPushButton("Open Scenes Folder")
+        open_folder_btn.setToolTip("Open the scenes folder in file explorer")
+        open_folder_btn.clicked.connect(self._open_scenes_folder)
+        buttons_layout.addWidget(open_folder_btn)
+
+        buttons_layout.addStretch()
+
+        open_btn = QPushButton("Open Selected")
+        open_btn.setToolTip("Open the selected scene file in Maya")
+        open_btn.clicked.connect(self._open_selected)
+        buttons_layout.addWidget(open_btn)
+
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.reject)
+        buttons_layout.addWidget(close_btn)
+
+        layout.addLayout(buttons_layout)
+
+        # Store selected file path
+        self.selected_file_path = ""
+
+        # Populate the file list
+        self.refresh_file_list()
+
+    def refresh_file_list(self):
+        """Refresh the list of scene files"""
+        import os
+
+        self.files_list.clear()
+        self.selected_file_path = ""
+
+        if not self.project_path:
+            return
+
+        # Find scenes directory
+        self.scenes_path = os.path.join(self.project_path, "scenes")
+
+        if not os.path.exists(self.scenes_path):
+            from PySide6.QtWidgets import QListWidgetItem
+            item = QListWidgetItem("No scenes folder found")
+            item.setData(Qt.UserRole, "")
+            self.files_list.addItem(item)
+            return
+
+        # Get all Maya files
+        maya_files = []
+        for root, dirs, files in os.walk(self.scenes_path):
+            for file in files:
+                if file.lower().endswith(('.ma', '.mb')):
+                    full_path = os.path.join(root, file)
+                    rel_path = os.path.relpath(full_path, self.scenes_path)
+                    # Get file modification time
+                    mod_time = os.path.getmtime(full_path)
+                    maya_files.append((rel_path, full_path, mod_time))
+
+        # Sort by modification time (newest first)
+        maya_files.sort(key=lambda x: x[2], reverse=True)
+
+        # Add to list
+        from PySide6.QtWidgets import QListWidgetItem
+        from datetime import datetime
+
+        for rel_path, full_path, mod_time in maya_files:
+            mod_date = datetime.fromtimestamp(mod_time).strftime("%Y-%m-%d %H:%M")
+            item = QListWidgetItem(f"{rel_path}  [{mod_date}]")
+            item.setData(Qt.UserRole, full_path)
+            item.setToolTip(full_path)
+            self.files_list.addItem(item)
+
+        if not maya_files:
+            item = QListWidgetItem("No Maya scene files found")
+            item.setData(Qt.UserRole, "")
+            self.files_list.addItem(item)
+
+    def _on_selection_changed(self):
+        """Handle file selection change"""
+        import os
+        from datetime import datetime
+
+        selected_items = self.files_list.selectedItems()
+        if not selected_items:
+            self.selected_file_path = ""
+            self.file_info_label.setText("Select a file to view details")
+            self.notes_display.setPlainText("")
+            return
+
+        file_path = selected_items[0].data(Qt.UserRole)
+        if not file_path or not os.path.exists(file_path):
+            self.selected_file_path = ""
+            self.file_info_label.setText("File not found")
+            self.notes_display.setPlainText("")
+            return
+
+        self.selected_file_path = file_path
+
+        # Get file info
+        stat = os.stat(file_path)
+        size_mb = stat.st_size / (1024 * 1024)
+        mod_time = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+
+        info_text = f"""<b>Filename:</b> {os.path.basename(file_path)}<br>
+<b>Size:</b> {size_mb:.2f} MB<br>
+<b>Modified:</b> {mod_time}<br>
+<b>Path:</b> {file_path}"""
+
+        self.file_info_label.setText(info_text)
+
+        # Get notes from version history
+        notes = ""
+        if self.version_history:
+            versions = self.version_history.get_versions_for_file(file_path)
+            for version in versions:
+                if os.path.normpath(version.get('path', '')) == os.path.normpath(file_path):
+                    notes = version.get('notes', '')
+                    break
+
+        self.notes_display.setPlainText(notes if notes else "")
+
+    def _on_double_click(self, item):
+        """Handle double-click on file item"""
+        file_path = item.data(Qt.UserRole)
+        if file_path:
+            self.selected_file_path = file_path
+            self.accept()
+
+    def _open_selected(self):
+        """Open the selected file"""
+        if self.selected_file_path:
+            self.accept()
+
+    def _view_full_notes(self):
+        """View notes in enlarged dialog"""
+        import os
+
+        if not self.selected_file_path:
+            return
+
+        notes = self.notes_display.toPlainText()
+        filename = os.path.basename(self.selected_file_path)
+
+        dialog = EnlargedNotesViewerDialog(
+            self,
+            filename=filename,
+            notes=notes,
+            file_path=self.selected_file_path,
+            editable=False
+        )
+        dialog.exec()
+
+    def _open_scenes_folder(self):
+        """Open scenes folder in file explorer"""
+        import subprocess
+        import sys
+        import os
+
+        if not self.scenes_path or not os.path.exists(self.scenes_path):
+            return
+
+        try:
+            if sys.platform == 'win32':
+                os.startfile(self.scenes_path)
+            elif sys.platform == 'darwin':
+                subprocess.Popen(['open', self.scenes_path])
+            else:
+                subprocess.Popen(['xdg-open', self.scenes_path])
+        except Exception as e:
+            print(f"Error opening folder: {e}")
+
+    def get_selected_file(self):
+        """Return the selected file path"""
+        return self.selected_file_path
