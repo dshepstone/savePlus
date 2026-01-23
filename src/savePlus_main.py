@@ -193,14 +193,15 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.preferences_layout.setContentsMargins(8, 8, 8, 8)
             self.preferences_layout.setSpacing(10)
             
-            # Add tabs to tab widget
-            self.tab_widget.addTab(self.saveplus_tab, "SavePlus")
+            # Add tabs to tab widget - Project tab is first for project management workflow
             self.tab_widget.addTab(self.project_tab, "Project")
+            self.tab_widget.addTab(self.saveplus_tab, "SavePlus")
             self.tab_widget.addTab(self.history_tab, "History")
             self.tab_widget.addTab(self.preferences_tab, "Preferences")
 
             self.project_tab_index = self.tab_widget.indexOf(self.project_tab)
             self.history_tab_index = self.tab_widget.indexOf(self.history_tab)
+            self.saveplus_tab_index = self.tab_widget.indexOf(self.saveplus_tab)
             
             # Add tab widget to main layout
             main_layout.addWidget(self.tab_widget)
@@ -758,10 +759,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             project_status_controls = QHBoxLayout()
             refresh_project_button = QPushButton("Refresh")
             refresh_project_button.clicked.connect(self.update_project_tracking)
+            maya_project_window_button = QPushButton("Maya Project Window...")
+            maya_project_window_button.setToolTip("Open Maya's standard project setup window")
+            maya_project_window_button.clicked.connect(self.open_maya_project_window)
+            open_project_folder_button = QPushButton("Open Folder")
+            open_project_folder_button.setToolTip("Open current project folder in file browser")
+            open_project_folder_button.clicked.connect(self.open_current_project_folder)
+            project_status_controls.addWidget(maya_project_window_button)
+            project_status_controls.addWidget(open_project_folder_button)
             project_status_controls.addStretch()
             project_status_controls.addWidget(refresh_project_button)
             current_project_layout.addLayout(project_status_controls)
-            
+
             # Set existing project
             existing_project_group = QGroupBox("Set Existing Project")
             existing_project_layout = QFormLayout(existing_project_group)
@@ -777,11 +786,27 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             existing_project_path_layout.addWidget(browse_existing_button)
             
             existing_project_layout.addRow("Project Path:", existing_project_path_layout)
-            
+
             set_project_button = QPushButton("Set Project")
             set_project_button.clicked.connect(self.set_existing_project)
             existing_project_layout.addRow("", set_project_button)
-            
+
+            # Rename project
+            rename_project_group = QGroupBox("Rename Project")
+            rename_project_layout = QFormLayout(rename_project_group)
+
+            self.rename_project_new_name = QLineEdit()
+            self.rename_project_new_name.setPlaceholderText("New project folder name")
+            rename_project_layout.addRow("New Name:", self.rename_project_new_name)
+
+            rename_buttons_layout = QHBoxLayout()
+            rename_project_button = QPushButton("Rename Project Folder")
+            rename_project_button.setToolTip("Rename the current project's folder")
+            rename_project_button.clicked.connect(self.rename_current_project)
+            rename_buttons_layout.addWidget(rename_project_button)
+            rename_buttons_layout.addStretch()
+            rename_project_layout.addRow("", rename_buttons_layout)
+
             # Create new project
             create_project_group = QGroupBox("Create New Project")
             create_project_layout = QFormLayout(create_project_group)
@@ -832,6 +857,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             self.project_layout.addWidget(current_project_group)
             self.project_layout.addWidget(existing_project_group)
+            self.project_layout.addWidget(rename_project_group)
             self.project_layout.addWidget(create_project_group)
             self.project_layout.addStretch()
             
@@ -881,6 +907,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.history_table.setEditTriggers(QTableWidget.NoEditTriggers)  # Make read-only
             self.history_table.setSelectionBehavior(QTableWidget.SelectRows)
             self.history_table.setSelectionMode(QTableWidget.SingleSelection)
+            self.history_table.itemDoubleClicked.connect(self.open_history_file_double_click)
             
             # Adjust column widths
             header = self.history_table.horizontalHeader()
@@ -900,7 +927,11 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             open_history_button = QPushButton("Open Selected")
             open_history_button.clicked.connect(self.open_selected_history_file)
-            
+
+            view_notes_button = QPushButton("View Notes")
+            view_notes_button.setToolTip("View or edit notes for the selected version")
+            view_notes_button.clicked.connect(self.view_history_notes)
+
             export_history_button = QPushButton("Export History")
             export_history_button.clicked.connect(self.export_history)
             export_history_button.setToolTip("Export version history to a text file")
@@ -908,6 +939,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             history_controls.addWidget(refresh_history_button)
             history_controls.addWidget(clear_history_button)
             history_controls.addStretch()
+            history_controls.addWidget(view_notes_button)
             history_controls.addWidget(open_history_button)
             history_controls.addWidget(export_history_button)
             
@@ -1697,7 +1729,101 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         cmds.optionVar(sv=(self.OPT_VAR_PROJECT_ROOT_PATH, project_root))
         
         self.set_project_from_path(project_path)
-    
+
+    def open_maya_project_window(self):
+        """Open Maya's standard project setup window"""
+        try:
+            mel.eval('projectWindow')
+            self.status_bar.showMessage("Maya Project Window opened", 3000)
+        except Exception as e:
+            savePlus_core.debug_print(f"Error opening project window: {e}")
+            QMessageBox.warning(self, "Error", f"Could not open Maya project window: {e}")
+
+    def open_current_project_folder(self):
+        """Open the current project folder in the system file browser"""
+        try:
+            project_dir = savePlus_core.get_maya_project_directory()
+            if project_dir and os.path.isdir(project_dir):
+                if sys.platform == 'win32':
+                    os.startfile(project_dir)
+                elif sys.platform == 'darwin':
+                    subprocess.Popen(['open', project_dir])
+                else:
+                    subprocess.Popen(['xdg-open', project_dir])
+                self.status_bar.showMessage(f"Opened: {project_dir}", 3000)
+            else:
+                QMessageBox.warning(self, "No Project", "No valid project directory is currently set.")
+        except Exception as e:
+            savePlus_core.debug_print(f"Error opening project folder: {e}")
+            QMessageBox.warning(self, "Error", f"Could not open project folder: {e}")
+
+    def rename_current_project(self):
+        """Rename the current project folder"""
+        new_name = self.rename_project_new_name.text().strip()
+        if not new_name:
+            QMessageBox.warning(self, "Missing Name", "Please enter a new project name.")
+            return
+
+        # Sanitize the name
+        new_name = self.sanitize_project_component(new_name)
+        if not new_name:
+            QMessageBox.warning(self, "Invalid Name", "The project name contains only invalid characters.")
+            return
+
+        project_dir = savePlus_core.get_maya_project_directory()
+        if not project_dir or not os.path.isdir(project_dir):
+            QMessageBox.warning(self, "No Project", "No valid project directory is currently set.")
+            return
+
+        parent_dir = os.path.dirname(project_dir)
+        old_name = os.path.basename(project_dir)
+        new_path = os.path.join(parent_dir, new_name)
+
+        if os.path.exists(new_path):
+            QMessageBox.warning(self, "Folder Exists", f"A folder named '{new_name}' already exists.")
+            return
+
+        # Confirm the rename
+        confirm = QMessageBox.question(
+            self,
+            "Confirm Rename",
+            f"Rename project folder from:\n'{old_name}'\nto:\n'{new_name}'?\n\nNote: This will close the current scene.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        if confirm != QMessageBox.Yes:
+            return
+
+        try:
+            # Check for unsaved changes
+            if cmds.file(query=True, modified=True):
+                save_result = QMessageBox.question(
+                    self,
+                    "Unsaved Changes",
+                    "Save changes before renaming?",
+                    QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                    QMessageBox.Yes
+                )
+                if save_result == QMessageBox.Cancel:
+                    return
+                elif save_result == QMessageBox.Yes:
+                    cmds.file(save=True)
+
+            # Create a new scene to release file locks
+            cmds.file(new=True, force=True)
+
+            # Rename the folder
+            os.rename(project_dir, new_path)
+
+            # Set the new project path
+            self.set_project_from_path(new_path)
+            self.rename_project_new_name.clear()
+            self.status_bar.showMessage(f"Project renamed to: {new_name}", 5000)
+
+        except Exception as e:
+            savePlus_core.debug_print(f"Error renaming project: {e}")
+            QMessageBox.critical(self, "Rename Failed", f"Could not rename project folder: {e}")
+
     def save_plus(self):
         """Execute the save plus operation with the specified filename"""
         print("Starting Save Plus operation...")
@@ -2099,14 +2225,76 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         if selected_rows:
             row = selected_rows[0].row()
             file_path = self.history_table.item(row, 2).text()
-            
+
             if file_path and os.path.exists(file_path):
                 self.open_maya_file(file_path)
             else:
                 message = f"File not found: {file_path}"
                 self.status_bar.showMessage(message, 5000)
                 print(message)
-    
+
+    def open_history_file_double_click(self, item):
+        """Open file when double-clicking on history table row"""
+        row = item.row()
+        file_path = self.history_table.item(row, 2).text()
+
+        if file_path and os.path.exists(file_path):
+            self.open_maya_file(file_path)
+        else:
+            message = f"File not found: {file_path}"
+            self.status_bar.showMessage(message, 5000)
+            print(message)
+
+    def view_history_notes(self):
+        """View or edit notes for the selected history entry"""
+        selected_rows = self.history_table.selectedItems()
+        if not selected_rows:
+            QMessageBox.information(self, "No Selection", "Please select a version from the history table.")
+            return
+
+        row = selected_rows[0].row()
+        file_path = self.history_table.item(row, 2).text()
+        filename = self.history_table.item(row, 0).text()
+        current_notes = self.history_table.item(row, 3).text()
+
+        # Create a dialog to view/edit notes
+        dialog = QDialog(self)
+        dialog.setWindowTitle(f"Notes - {filename}")
+        dialog.setMinimumWidth(400)
+        dialog.setMinimumHeight(200)
+
+        layout = QVBoxLayout(dialog)
+
+        # Notes text area
+        from PySide6.QtWidgets import QPlainTextEdit
+        notes_edit = QPlainTextEdit()
+        notes_edit.setPlainText(current_notes)
+        notes_edit.setPlaceholderText("Enter notes for this version...")
+        layout.addWidget(notes_edit)
+
+        # Buttons
+        buttons_layout = QHBoxLayout()
+        save_button = QPushButton("Save Notes")
+        cancel_button = QPushButton("Cancel")
+        buttons_layout.addStretch()
+        buttons_layout.addWidget(save_button)
+        buttons_layout.addWidget(cancel_button)
+        layout.addLayout(buttons_layout)
+
+        def save_notes():
+            new_notes = notes_edit.toPlainText().strip()
+            # Update the notes in the version history
+            if self.version_history.update_notes(file_path, new_notes):
+                self.history_table.item(row, 3).setText(new_notes)
+                self.status_bar.showMessage("Notes updated", 3000)
+                dialog.accept()
+            else:
+                QMessageBox.warning(self, "Error", "Could not update notes.")
+
+        save_button.clicked.connect(save_notes)
+        cancel_button.clicked.connect(dialog.reject)
+        dialog.exec()
+
     def export_history(self):
         """Export version history to a text file"""
         # Get save location
@@ -2150,7 +2338,9 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     
     def on_tab_changed(self, index):
         """Handle tab changed event"""
-        if index == self.history_tab_index:  # History tab
+        if index == self.project_tab_index:  # Project tab
+            self.update_project_tracking()
+        elif index == self.history_tab_index:  # History tab
             self.populate_history()
             self.populate_recent_files()
     

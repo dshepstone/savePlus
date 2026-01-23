@@ -235,28 +235,47 @@ class VersionHistoryModel:
             with open(file_path, 'w') as f:
                 f.write("SavePlus Version History Export\n")
                 f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-                
+
                 for group, versions in self.versions.items():
                     f.write(f"Group: {group}\n")
                     f.write("-" * 80 + "\n")
-                    
+
                     for idx, version in enumerate(versions):
                         f.write(f"Version {idx + 1}: {version.get('filename')}\n")
                         f.write(f"Date: {version.get('date')}\n")
                         f.write(f"Path: {version.get('path')}\n")
-                        
+
                         notes = version.get('notes', '').strip()
                         if notes:
                             f.write("Notes:\n")
                             f.write(f"{notes}\n")
-                        
+
                         f.write("-" * 40 + "\n")
-                    
+
                     f.write("\n")
-            
+
             return True
         except Exception as e:
             debug_print(f"Error exporting history: {e}")
+            return False
+
+    def update_notes(self, file_path, new_notes):
+        """Update the notes for a specific version entry"""
+        try:
+            base_path = os.path.normpath(file_path)
+
+            # Search through all groups to find the version
+            for group, versions in self.versions.items():
+                for version in versions:
+                    if os.path.normpath(version.get('path', '')) == base_path:
+                        version['notes'] = new_notes
+                        self.save_history()
+                        return True
+
+            debug_print(f"Version not found for path: {file_path}")
+            return False
+        except Exception as e:
+            debug_print(f"Error updating notes: {e}")
             return False
 
 def save_plus_proc(file_path=None, respect_project=True):
