@@ -335,8 +335,143 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.container_layout.addWidget(separator)
             self.container_layout.addSpacing(10)  # Add space after separator
 
-            # Create File Options section (expanded by default)
-            self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=False)
+            # Create Name Generator section (expanded by default - placed high for easy access)
+            self.name_gen_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Name Generator", collapsed=False)
+            self.name_gen_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+            # Create name generator content
+            name_gen = QWidget()
+            name_gen_layout = QFormLayout(name_gen)
+            name_gen_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
+
+            # Assignment letter and number
+            assignment_layout = QHBoxLayout()
+
+            # Assignment letter selection
+            self.assignment_letter_combo = QComboBox()
+            self.assignment_letter_combo.addItems(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
+            saved_letter = self.load_option_var(self.OPT_VAR_ASSIGNMENT_LETTER, "A")
+            index = self.assignment_letter_combo.findText(saved_letter)
+            if index >= 0:
+                self.assignment_letter_combo.setCurrentIndex(index)
+            self.assignment_letter_combo.setFixedWidth(50)
+            self.assignment_letter_combo.setToolTip("Assignment/Project letter identifier (e.g., A, B, J)")
+
+            # Assignment number selection
+            self.assignment_spinbox = QSpinBox()
+            self.assignment_spinbox.setRange(1, 99)
+            self.assignment_spinbox.setValue(self.load_option_var(self.OPT_VAR_ASSIGNMENT_NUMBER, 1))
+            self.assignment_spinbox.setFixedWidth(50)
+            self.assignment_spinbox.setToolTip("Assignment/Project number (e.g., 01, 02)")
+
+            assignment_layout.addWidget(self.assignment_letter_combo)
+            assignment_layout.addWidget(self.assignment_spinbox)
+            assignment_layout.addStretch()
+
+            # Last name
+            self.lastname_input = QLineEdit()
+            self.lastname_input.setPlaceholderText("Last Name")
+            self.lastname_input.setText(self.load_option_var(self.OPT_VAR_LAST_NAME, ""))
+            self.lastname_input.setFixedWidth(200)
+            self.lastname_input.setToolTip("Your last name for the filename")
+
+            # First name
+            self.firstname_input = QLineEdit()
+            self.firstname_input.setPlaceholderText("First Name")
+            self.firstname_input.setText(self.load_option_var(self.OPT_VAR_FIRST_NAME, ""))
+            self.firstname_input.setFixedWidth(200)
+            self.firstname_input.setToolTip("Your first name for the filename")
+
+            # Pipeline stage dropdown
+            pipeline_stage_layout = QHBoxLayout()
+            self.pipeline_stage_label = QLabel("Pipeline Stage:")
+
+            # Create the pipeline stage dropdown
+            self.pipeline_stage_combo = QComboBox()
+            self.pipeline_stage_combo.addItems([
+                "Layout",
+                "Planning",
+                "Blocking",
+                "Blocking Plus",
+                "Spline",
+                "Polish",
+                "Lighting",
+                "Final"
+            ])
+            saved_stage = self.load_option_var(self.OPT_VAR_PIPELINE_STAGE, "Blocking")
+            index = self.pipeline_stage_combo.findText(saved_stage)
+            if index >= 0:
+                self.pipeline_stage_combo.setCurrentIndex(index)
+            self.pipeline_stage_combo.setFixedWidth(120)
+
+            # Status dropdown (WIP or Final)
+            self.version_status_combo = QComboBox()
+            self.version_status_combo.addItems(["wip", "final"])
+            saved_type = self.load_option_var(self.OPT_VAR_VERSION_TYPE, "wip")
+            index = self.version_status_combo.findText(saved_type)
+            if index >= 0:
+                self.version_status_combo.setCurrentIndex(index)
+            self.version_status_combo.setFixedWidth(80)
+
+            self.pipeline_stage_combo.setItemData(0, "Camera angles, character and prop placement, and shot timing established", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(1, "Performance planning using reference footage and thumbnail sketches", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(2, "Key storytelling poses blocked in stepped mode with rough timing", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(3, "Primary and secondary breakdowns added; refined timing, spacing, and arcs", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(4, "Converted to spline; cleaned interpolation, arcs, and spacing", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(5, "Final polish: facial animation, overlap, follow-through, and subtle details", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(6, "Lighting pass: establishing mood, depth, and render look", Qt.ToolTipRole)
+            self.pipeline_stage_combo.setItemData(7, "Shot approved: animation and visuals are final and ready for comp or submission", Qt.ToolTipRole)
+
+            # Add both dropdowns to the layout
+            pipeline_stage_layout.addWidget(self.pipeline_stage_combo)
+            pipeline_stage_layout.addWidget(self.version_status_combo)
+            pipeline_stage_layout.addStretch()
+
+            # Version number
+            version_number_layout = QHBoxLayout()
+            self.version_number_spinbox = QSpinBox()
+            self.version_number_spinbox.setRange(1, 99)
+            self.version_number_spinbox.setValue(self.load_option_var(self.OPT_VAR_VERSION_NUMBER, 1))
+            self.version_number_spinbox.setFixedWidth(50)
+            self.version_number_spinbox.setToolTip("Starting version number")
+            version_number_layout.addWidget(self.version_number_spinbox)
+            version_number_layout.addStretch()
+
+            # Preview label
+            self.filename_preview = QLabel("No filename")
+            self.filename_preview.setStyleSheet("color: #0066CC; font-weight: bold;")
+
+            # Generate and Reset buttons
+            name_gen_buttons_layout = QHBoxLayout()
+            generate_button = QPushButton("Generate Filename")
+            generate_button.clicked.connect(self.generate_filename)
+            generate_button.setToolTip("Create a filename based on the settings above and apply it to the Filename field")
+
+            reset_button = QPushButton("Reset")
+            reset_button.clicked.connect(self.reset_name_generator)
+            reset_button.setToolTip("Reset all Name Generator fields to defaults")
+
+            name_gen_buttons_layout.addStretch()
+            name_gen_buttons_layout.addWidget(generate_button)
+            name_gen_buttons_layout.addWidget(reset_button)
+
+            # Add all to form layout
+            name_gen_layout.addRow("Assignment:", assignment_layout)
+            name_gen_layout.addRow("Last Name:", self.lastname_input)
+            name_gen_layout.addRow("First Name:", self.firstname_input)
+            name_gen_layout.addRow("Stage:", pipeline_stage_layout)
+            name_gen_layout.addRow("Version:", version_number_layout)
+            name_gen_layout.addRow("Preview:", self.filename_preview)
+            name_gen_layout.addRow("", name_gen_buttons_layout)
+
+            self.name_gen_section.add_widget(name_gen)
+            self.container_layout.addWidget(self.name_gen_section)
+
+            # Add name_gen_section toggled signal connection
+            self.name_gen_section.toggled.connect(self.adjust_window_size)
+
+            # Create File Options section (collapsed by default - advanced settings)
+            self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=True)
             self.file_options_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
             # Create file options content
@@ -599,134 +734,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Add file_options_section toggled signal connection
             self.file_options_section.toggled.connect(self.adjust_window_size)
-            
-            # Create Name Generator section (collapsed by default)
-            self.name_gen_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Name Generator", collapsed=True)
-            self.name_gen_section.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-            
-            # Create name generator content
-            name_gen = QWidget()
-            name_gen_layout = QFormLayout(name_gen)
-            name_gen_layout.setFieldGrowthPolicy(QFormLayout.ExpandingFieldsGrow)
-            
-            # Assignment letter and number
-            assignment_layout = QHBoxLayout()
-            
-            # Assignment letter selection
-            self.assignment_letter_combo = QComboBox()
-            self.assignment_letter_combo.addItems(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
-            saved_letter = self.load_option_var(self.OPT_VAR_ASSIGNMENT_LETTER, "A")
-            index = self.assignment_letter_combo.findText(saved_letter)
-            if index >= 0:
-                self.assignment_letter_combo.setCurrentIndex(index)
-            self.assignment_letter_combo.setFixedWidth(50)
-            
-            # Assignment number selection
-            self.assignment_spinbox = QSpinBox()
-            self.assignment_spinbox.setRange(1, 99)
-            self.assignment_spinbox.setValue(self.load_option_var(self.OPT_VAR_ASSIGNMENT_NUMBER, 1))
-            self.assignment_spinbox.setFixedWidth(50)
-            
-            assignment_layout.addWidget(self.assignment_letter_combo)
-            assignment_layout.addWidget(self.assignment_spinbox)
-            assignment_layout.addStretch()
-            
-            # Last name
-            self.lastname_input = QLineEdit()
-            self.lastname_input.setPlaceholderText("Last Name")
-            self.lastname_input.setText(self.load_option_var(self.OPT_VAR_LAST_NAME, ""))
-            self.lastname_input.setFixedWidth(200)
-            
-            # First name
-            self.firstname_input = QLineEdit()
-            self.firstname_input.setPlaceholderText("First Name")
-            self.firstname_input.setText(self.load_option_var(self.OPT_VAR_FIRST_NAME, ""))
-            self.firstname_input.setFixedWidth(200)
-            
-            # Pipeline stage dropdown (replaces the simple version_type_combo)
-            pipeline_stage_layout = QHBoxLayout()
-            self.pipeline_stage_label = QLabel("Pipeline Stage:")
-
-            # Create the pipeline stage dropdown
-            self.pipeline_stage_combo = QComboBox()
-            self.pipeline_stage_combo.addItems([
-                "Layout", 
-                "Planning", 
-                "Blocking", 
-                "Blocking Plus", 
-                "Spline", 
-                "Polish", 
-                "Lighting", 
-                "Final"
-            ])
-            saved_stage = self.load_option_var(self.OPT_VAR_PIPELINE_STAGE, "Blocking")
-            index = self.pipeline_stage_combo.findText(saved_stage)
-            if index >= 0:
-                self.pipeline_stage_combo.setCurrentIndex(index)
-            self.pipeline_stage_combo.setFixedWidth(120)
-
-            # Status dropdown (WIP or Final)
-            self.version_status_combo = QComboBox()
-            self.version_status_combo.addItems(["wip", "final"])
-            saved_type = self.load_option_var(self.OPT_VAR_VERSION_TYPE, "wip")
-            index = self.version_status_combo.findText(saved_type)
-            if index >= 0:
-                self.version_status_combo.setCurrentIndex(index)
-            self.version_status_combo.setFixedWidth(80)
-
-            self.pipeline_stage_combo.setItemData(0, "Camera angles, character and prop placement, and shot timing established", Qt.ToolTipRole)  # Layout
-            self.pipeline_stage_combo.setItemData(1, "Performance planning using reference footage and thumbnail sketches", Qt.ToolTipRole)  # Planning / Reference
-            self.pipeline_stage_combo.setItemData(2, "Key storytelling poses blocked in stepped mode with rough timing", Qt.ToolTipRole)  # Blocking
-            self.pipeline_stage_combo.setItemData(3, "Primary and secondary breakdowns added; refined timing, spacing, and arcs", Qt.ToolTipRole)  # Blocking Plus
-            self.pipeline_stage_combo.setItemData(4, "Converted to spline; cleaned interpolation, arcs, and spacing", Qt.ToolTipRole)  # Spline
-            self.pipeline_stage_combo.setItemData(5, "Final polish: facial animation, overlap, follow-through, and subtle details", Qt.ToolTipRole)  # Polish
-            self.pipeline_stage_combo.setItemData(6, "Lighting pass: establishing mood, depth, and render look", Qt.ToolTipRole)  # Lighting
-            self.pipeline_stage_combo.setItemData(7, "Shot approved: animation and visuals are final and ready for comp or submission", Qt.ToolTipRole)  # Final Output
-
-            # Add both dropdowns to the layout
-            pipeline_stage_layout.addWidget(self.pipeline_stage_combo)
-            pipeline_stage_layout.addWidget(self.version_status_combo)
-            pipeline_stage_layout.addStretch()
-            
-            # Version number
-            version_number_layout = QHBoxLayout()
-            self.version_number_spinbox = QSpinBox()
-            self.version_number_spinbox.setRange(1, 99)
-            self.version_number_spinbox.setValue(self.load_option_var(self.OPT_VAR_VERSION_NUMBER, 1))
-            self.version_number_spinbox.setFixedWidth(50)
-            version_number_layout.addWidget(self.version_number_spinbox)
-            version_number_layout.addStretch()
-            
-            # Preview label
-            self.filename_preview = QLabel("No filename")
-            self.filename_preview.setStyleSheet("color: #0066CC; font-weight: bold;")
-            
-            # Generate and Reset buttons
-            buttons_layout = QHBoxLayout()
-            generate_button = QPushButton("Generate Filename")
-            generate_button.clicked.connect(self.generate_filename)
-            
-            reset_button = QPushButton("Reset")
-            reset_button.clicked.connect(self.reset_name_generator)
-            
-            buttons_layout.addStretch()
-            buttons_layout.addWidget(generate_button)
-            buttons_layout.addWidget(reset_button)
-            
-            # Add all to form layout
-            name_gen_layout.addRow("Assignment:", assignment_layout)
-            name_gen_layout.addRow("Last Name:", self.lastname_input)
-            name_gen_layout.addRow("First Name:", self.firstname_input)
-            name_gen_layout.addRow("Stage:", pipeline_stage_layout)
-            name_gen_layout.addRow("Version:", version_number_layout)
-            name_gen_layout.addRow("Preview:", self.filename_preview)
-            name_gen_layout.addRow("", buttons_layout)
-            
-            self.name_gen_section.add_widget(name_gen)
-            self.container_layout.addWidget(self.name_gen_section)
-            
-            # Add name_gen_section toggled signal connection
-            self.name_gen_section.toggled.connect(self.adjust_window_size)
 
             # Create Log section (collapsed by default)
             self.log_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("Log Output", collapsed=True)
