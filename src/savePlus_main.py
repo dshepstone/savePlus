@@ -1991,23 +1991,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             print(f"Applied file extension: {ext}")
         
         print(f"Attempting to save as: {filename}")
-        
-        # Get version notes if enabled
+
+        # Get version notes - ALWAYS check quick note first, regardless of checkbox
         version_notes = ""
-        if self.add_version_notes.isChecked():
-            # Check for quick note first
-            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
-                version_notes = self.quick_note_input.text().strip()
-                self.quick_note_input.clear()  # Clear after using
-                print("Quick note added")
+        if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
+            version_notes = self.quick_note_input.text().strip()
+            self.quick_note_input.clear()  # Clear after using
+            print(f"Quick note captured: {version_notes}")
+        elif self.add_version_notes.isChecked():
+            # Only show dialog if no quick note was provided AND checkbox is checked
+            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+            if notes_dialog.exec() == QDialog.Accepted:
+                version_notes = notes_dialog.get_notes()
+                print("Version notes added via dialog")
             else:
-                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-                if notes_dialog.exec() == QDialog.Accepted:
-                    version_notes = notes_dialog.get_notes()
-                    print("Version notes added")
-                else:
-                    print("Skipped version notes")
-        
+                print("Skipped version notes dialog")
+
         # Perform the save operation with project awareness
         respect_project = hasattr(self, 'respect_project_structure') and self.respect_project_structure.isChecked()
         result, message, new_file_path = savePlus_core.save_plus_proc(filename, respect_project)
@@ -2131,23 +2130,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 print(message)
                 return
         
-        # Get version notes if enabled
-        # Get version notes if enabled
+        # Get version notes - ALWAYS check quick note first, regardless of checkbox
         version_notes = ""
-        if self.add_version_notes.isChecked():
-            # Check for quick note first
-            if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
-                version_notes = self.quick_note_input.text().strip()
-                self.quick_note_input.clear()  # Clear after using
-                print("Quick note added")
+        if hasattr(self, 'quick_note_input') and self.quick_note_input.text().strip():
+            version_notes = self.quick_note_input.text().strip()
+            self.quick_note_input.clear()  # Clear after using
+            print(f"Quick note captured: {version_notes}")
+        elif self.add_version_notes.isChecked():
+            # Only show dialog if no quick note was provided AND checkbox is checked
+            notes_dialog = savePlus_ui_components.NoteInputDialog(self)
+            if notes_dialog.exec() == QDialog.Accepted:
+                version_notes = notes_dialog.get_notes()
+                print("Version notes added via dialog")
             else:
-                notes_dialog = savePlus_ui_components.NoteInputDialog(self)
-                if notes_dialog.exec() == QDialog.Accepted:
-                    version_notes = notes_dialog.get_notes()
-                    print("Version notes added")
-                else:
-                    print("Skipped version notes")
-        
+                print("Skipped version notes dialog")
+
         # Make sure directory exists
         directory = os.path.dirname(filename)
         if directory and not os.path.exists(directory):
