@@ -1,0 +1,142 @@
+================================================================================
+                         SavePlus v1.3.0 Release Notes
+                              Major Release
+================================================================================
+
+Release Date: January 2026
+Previous Version: 1.2.2
+
+This is a major release introducing significant improvements to project
+management, the preferences system, user interface organization, and
+overall usability.
+
+================================================================================
+                              NEW FEATURES
+================================================================================
+
+PROJECT MANAGEMENT TAB (NEW)
+----------------------------
+  - New dedicated Project tab moved to first position for better workflow
+  - Create new Maya projects with custom naming conventions
+  - Set existing projects quickly with directory browser
+  - Rename projects directly from SavePlus with proper Maya workspace handling
+  - Open project folder in system file explorer
+  - Quick access to Maya's native Project Window
+  - Project status display showing current project path
+
+REDESIGNED PREFERENCES PAGE
+---------------------------
+  The preferences page has been completely redesigned with improved
+  organization, clear labeling, and comprehensive help text.
+
+  New Preference Sections:
+  - Saving Behavior: File type, auto-increment, save confirmations
+  - Save Reminders: Interval settings, sound notifications
+  - Automatic Backups: Enable/disable, intervals, max backups, custom location
+  - Version Notes: Quick note behavior, history limits
+  - File Paths: Default save location, project directory
+  - User Interface: Section expansion defaults
+
+  New Preferences Added:
+  - Auto-increment version number on Save Plus (toggle)
+  - Show confirmation dialog after saving (toggle)
+  - Play sound with save reminders (toggle)
+  - Maximum number of backups to keep (1-50)
+  - Custom backup location directory
+  - Clear quick note field after saving (toggle)
+  - Maximum history entries to display (10-500)
+
+  Additional Improvements:
+  - Hover tooltips on every preference control
+  - Descriptive help text under each setting
+  - Reset to Defaults button
+  - Scrollable container for better navigation
+  - About section with version information
+
+ENHANCED HISTORY TAB
+--------------------
+  - New 'Clear Recent' button to clear only the recent files list
+  - New 'Browse Project' button to view all scenes in project folder
+  - Enlarged Notes Viewer dialog for better note readability
+  - Project Scenes Browser dialog for browsing all project scenes
+  - Helper text for recent files and version history sections
+
+QUICK NOTE IMPROVEMENTS
+-----------------------
+  - Quick Note field moved directly under save buttons for visibility
+  - Always visible without scrolling or expanding sections
+  - Notes are now ALWAYS saved regardless of checkbox state
+  - Compact inline styling with label and input field
+  - Optional clearing behavior controlled by preferences
+
+================================================================================
+                           UI/UX IMPROVEMENTS
+================================================================================
+
+REORGANIZED SAVEPLUS TAB
+------------------------
+  - Name Generator section moved above File Options (expanded by default)
+  - File Options section now collapsed by default (advanced settings)
+  - More logical flow: Buttons -> Quick Note -> Name Generator -> File Options
+  - Tooltips added to all Name Generator fields
+
+IMPROVED STYLING
+----------------
+  - Save location field now uses dark background (consistent theme)
+  - Enhanced quick note input styling
+  - Better button layouts and spacing
+  - Comprehensive tooltips throughout the entire tool
+
+================================================================================
+                              BUG FIXES
+================================================================================
+
+  - Fixed: Quick notes not being saved regardless of checkbox state
+  - Fixed: Project rename not working due to trailing slash in Maya paths
+  - Fixed: Maya workspace cache issues during project rename
+  - Fixed: Cross-platform compatibility for project operations (shutil.move)
+  - Fixed: Missing Maya modules now handled gracefully
+
+================================================================================
+                          TECHNICAL IMPROVEMENTS
+================================================================================
+
+  - Added .gitignore for Python cache and common files
+  - Added pyrightconfig.json for VS Code Python/Pyright support
+  - Improved error handling with detailed traceback output
+  - Better debug output to Maya Script Editor
+  - Cross-platform support improvements
+
+================================================================================
+                            UPGRADE NOTES
+================================================================================
+
+Upgrading from v1.2.2:
+  1. Download the new SavePlus v1.3.0 package
+  2. Replace your existing SavePlus installation files
+  3. Restart Maya
+  4. Your existing preferences will be preserved
+  5. New preferences will use default values
+
+Note: This version introduces new preference options. After upgrading,
+visit the Preferences tab to explore and configure the new settings.
+
+================================================================================
+                              KNOWN ISSUES
+================================================================================
+
+  - Sound notifications for save reminders require system audio support
+  - Some preferences may need Maya restart to take full effect
+
+================================================================================
+                               CREDITS
+================================================================================
+
+SavePlus is developed by David Shepstone.
+
+For bug reports, feature requests, and contributions:
+https://github.com/dshepstone/savePlus
+
+================================================================================
+                         Thank you for using SavePlus!
+================================================================================
