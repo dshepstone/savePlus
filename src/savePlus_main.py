@@ -137,12 +137,17 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Create a central widget
             central_widget = QWidget()
+            central_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             self.setCentralWidget(central_widget)
             
             # Create main layout
             main_layout = QVBoxLayout(central_widget)
             main_layout.setContentsMargins(5, 5, 5, 5)
             main_layout.setSpacing(0)
+
+            # Allow manual resizing and show a size grip in the corner
+            self.setSizeGripEnabled(True)
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             
             # --- CREATE BASIC UI FIRST --- 
             
@@ -789,6 +794,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.scroll_area.setWidgetResizable(True)
             self.scroll_area.setWidget(self.container_widget)
             self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             
             # Add scroll area to saveplus layout
             self.saveplus_layout.addWidget(self.scroll_area)
@@ -838,12 +844,17 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             refresh_project_scenes_button.setToolTip("Refresh the scenes list from the project's scenes folder")
             refresh_project_scenes_button.clicked.connect(lambda: self.refresh_project_scenes_list(force=True))
 
+            open_project_scenes_browser_button = QPushButton("Open Browser")
+            open_project_scenes_browser_button.setToolTip("Open the full scenes browser with file details and notes")
+            open_project_scenes_browser_button.clicked.connect(self.open_project_browser)
+
             self.project_scenes_open_button = QPushButton("Open Selected")
             self.project_scenes_open_button.setToolTip("Open the selected scene in Maya")
             self.project_scenes_open_button.setEnabled(False)
             self.project_scenes_open_button.clicked.connect(self.open_selected_project_scene)
 
             project_scenes_controls.addWidget(refresh_project_scenes_button)
+            project_scenes_controls.addWidget(open_project_scenes_browser_button)
             project_scenes_controls.addStretch()
             project_scenes_controls.addWidget(self.project_scenes_open_button)
             project_scenes_layout.addLayout(project_scenes_controls)
