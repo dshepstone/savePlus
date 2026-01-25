@@ -1,0 +1,9 @@
+SavePlus v1.3.1 Release Notes
+============================
+
+Highlights
+- Project tab now includes a Project Scenes section that lists scenes in the current project's scenes folder with quick open controls.
+- Added an Open Browser option to launch the full Project Scenes browser, including file details and version notes.
+- Improved window resizing support with expanding layout policies and a status bar size grip.
+- Fixed a startup error caused by calling an unsupported size-grip API on the main window.
+

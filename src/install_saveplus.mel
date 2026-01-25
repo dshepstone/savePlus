@@ -1,5 +1,5 @@
 /*
-SavePlus Installer
+SavePlus Installer (v1.3.1)
 Drag and drop this file into Maya's viewport to install SavePlus.
 Compatible with Maya 2016+
 */
@@ -8,7 +8,7 @@ global proc savePlusInstall() {
     string $whatIs = `whatIs savePlusInstall`;
     string $path = `substring $whatIs 25 999`;
     string $filename = `substitute "install_saveplus.mel" $path "install_saveplus.py"`;
-    python("import imp;imp.load_source('_savePlusInstall', '"+$filename+"')");
+    python("import importlib.util;spec=importlib.util.spec_from_file_location('_savePlusInstall', r'"+$filename+"');module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)");
 }
 
 savePlusInstall();
