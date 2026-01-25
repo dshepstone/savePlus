@@ -818,6 +818,38 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             project_status_controls.addWidget(refresh_project_button)
             current_project_layout.addLayout(project_status_controls)
 
+            # Project scenes browser
+            project_scenes_group = QGroupBox("Project Scenes")
+            project_scenes_layout = QVBoxLayout(project_scenes_group)
+
+            project_scenes_helper = QLabel("Select a scene from the project's scenes folder and open it.")
+            project_scenes_helper.setStyleSheet("color: #666666; font-size: 9px; font-style: italic; padding: 2px;")
+            project_scenes_layout.addWidget(project_scenes_helper)
+
+            self.project_scenes_list = QListWidget()
+            self.project_scenes_list.setAlternatingRowColors(True)
+            self.project_scenes_list.setToolTip("Scenes in the current project's scenes folder")
+            self.project_scenes_list.itemSelectionChanged.connect(self.update_project_scenes_controls)
+            self.project_scenes_list.itemDoubleClicked.connect(self.open_selected_project_scene)
+            project_scenes_layout.addWidget(self.project_scenes_list)
+
+            project_scenes_controls = QHBoxLayout()
+            refresh_project_scenes_button = QPushButton("Refresh List")
+            refresh_project_scenes_button.setToolTip("Refresh the scenes list from the project's scenes folder")
+            refresh_project_scenes_button.clicked.connect(lambda: self.refresh_project_scenes_list(force=True))
+
+            self.project_scenes_open_button = QPushButton("Open Selected")
+            self.project_scenes_open_button.setToolTip("Open the selected scene in Maya")
+            self.project_scenes_open_button.setEnabled(False)
+            self.project_scenes_open_button.clicked.connect(self.open_selected_project_scene)
+
+            project_scenes_controls.addWidget(refresh_project_scenes_button)
+            project_scenes_controls.addStretch()
+            project_scenes_controls.addWidget(self.project_scenes_open_button)
+            project_scenes_layout.addLayout(project_scenes_controls)
+
+            self.project_scenes_last_path = None
+
             # Set existing project
             existing_project_group = QGroupBox("Set Existing Project")
             existing_project_layout = QFormLayout(existing_project_group)
@@ -903,6 +935,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             create_project_layout.addRow("", create_project_button)
             
             self.project_layout.addWidget(current_project_group)
+            self.project_layout.addWidget(project_scenes_group)
             self.project_layout.addWidget(existing_project_group)
             self.project_layout.addWidget(rename_project_group)
             self.project_layout.addWidget(create_project_group)
@@ -1368,6 +1401,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Initialize project tracking
             self.project_directory = savePlus_core.get_maya_project_directory()
             self.update_project_display()
+            self.refresh_project_scenes_list(force=True)
 
             # Connect to Maya's workspaceChanged event to update when project changes
             self.workspace_change_callback = None
@@ -2053,6 +2087,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         
         self.project_directory = savePlus_core.get_maya_project_directory()
         self.update_project_display()
+        self.refresh_project_scenes_list(force=True)
         self.status_bar.showMessage(f"Project set to: {normalized_path}", 5000)
 
     def create_project(self):
@@ -2780,6 +2815,85 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             selected_file = dialog.get_selected_file()
             if selected_file and os.path.exists(selected_file):
                 self.open_maya_file(selected_file)
+
+    def update_project_scenes_controls(self):
+        """Enable or disable project scenes controls based on selection"""
+        if not hasattr(self, "project_scenes_open_button"):
+            return
+
+        selected_items = self.project_scenes_list.selectedItems() if hasattr(self, "project_scenes_list") else []
+        has_valid_selection = False
+        if selected_items:
+            file_path = selected_items[0].data(Qt.UserRole)
+            has_valid_selection = bool(file_path and os.path.exists(file_path))
+
+        self.project_scenes_open_button.setEnabled(has_valid_selection)
+
+    def refresh_project_scenes_list(self, force=False):
+        """Refresh the project scenes list from the current project's scenes folder"""
+        if not hasattr(self, "project_scenes_list"):
+            return
+
+        project_path = self.project_directory or savePlus_core.get_maya_project_directory()
+
+        if not force and project_path == self.project_scenes_last_path:
+            return
+
+        self.project_scenes_last_path = project_path
+        self.project_scenes_list.clear()
+        self.project_scenes_open_button.setEnabled(False)
+
+        if not project_path:
+            item = QListWidgetItem("Set a project to view scenes")
+            item.setData(Qt.UserRole, "")
+            self.project_scenes_list.addItem(item)
+            return
+
+        scenes_path = os.path.join(project_path, "scenes")
+        if not os.path.exists(scenes_path):
+            item = QListWidgetItem("No scenes folder found")
+            item.setData(Qt.UserRole, "")
+            self.project_scenes_list.addItem(item)
+            return
+
+        maya_files = []
+        for root, _, files in os.walk(scenes_path):
+            for file_name in files:
+                if file_name.lower().endswith(('.ma', '.mb')):
+                    full_path = os.path.join(root, file_name)
+                    rel_path = os.path.relpath(full_path, scenes_path)
+                    mod_time = os.path.getmtime(full_path)
+                    maya_files.append((rel_path, full_path, mod_time))
+
+        maya_files.sort(key=lambda item: item[2], reverse=True)
+
+        if not maya_files:
+            item = QListWidgetItem("No Maya scene files found")
+            item.setData(Qt.UserRole, "")
+            self.project_scenes_list.addItem(item)
+            return
+
+        from datetime import datetime
+
+        for rel_path, full_path, mod_time in maya_files:
+            mod_date = datetime.fromtimestamp(mod_time).strftime("%Y-%m-%d %H:%M")
+            item = QListWidgetItem(f"{rel_path}  [{mod_date}]")
+            item.setData(Qt.UserRole, full_path)
+            item.setToolTip(full_path)
+            self.project_scenes_list.addItem(item)
+
+    def open_selected_project_scene(self):
+        """Open the selected scene from the project scenes list"""
+        if not hasattr(self, "project_scenes_list"):
+            return
+
+        selected_items = self.project_scenes_list.selectedItems()
+        if not selected_items:
+            return
+
+        file_path = selected_items[0].data(Qt.UserRole)
+        if file_path and os.path.exists(file_path):
+            self.open_maya_file(file_path)
     
     def on_tab_changed(self, index):
         """Handle tab changed event"""
@@ -3936,6 +4050,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
                 
                 # Update UI to reflect project change
                 self.update_project_display()
+                self.refresh_project_scenes_list(force=True)
                 
                 # If no project is active but we have a default path in preferences, use that
                 if not self.project_directory and hasattr(self, 'pref_default_path') and self.pref_default_path.text():
