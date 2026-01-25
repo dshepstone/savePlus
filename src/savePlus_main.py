@@ -146,7 +146,6 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             main_layout.setSpacing(0)
 
             # Allow manual resizing and show a size grip in the corner
-            self.setSizeGripEnabled(True)
             self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
             
             # --- CREATE BASIC UI FIRST --- 
@@ -156,6 +155,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Create status bar (basic UI component)
             self.status_bar = QStatusBar()
+            self.status_bar.setSizeGripEnabled(True)
             self.setStatusBar(self.status_bar)
             
             # --- CREATE HEADER ABOVE TABS ---
