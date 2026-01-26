@@ -56,6 +56,7 @@ def _onMayaDropped():
         filesToCopy = [
             "__init__.py",
             "savePlus_core.py",
+            "savePlus_maya.py",
             "savePlus_ui_components.py",
             "savePlus_main.py",
             "savePlus_launcher.py"
@@ -66,11 +67,14 @@ def _onMayaDropped():
             sourcePath = os.path.join(sourceDir, fileName)
             destPath = os.path.join(scriptsDir, fileName)
             
-            if os.path.exists(sourcePath):
-                shutil.copy2(sourcePath, destPath)
-                print(f"Copied {fileName} to {scriptsDir}")
-            else:
-                print(f"Warning: Could not find {sourcePath}")
+            if not os.path.exists(sourcePath):
+                raise FileNotFoundError(
+                    f"Missing installer source file: {fileName}. "
+                    f"Expected at: {sourcePath}"
+                )
+
+            shutil.copy2(sourcePath, destPath)
+            print(f"Copied {fileName} to {destPath}")
         
         # Look for the icon file in various locations
         iconFound = False
