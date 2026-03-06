@@ -5,6 +5,7 @@ Part of the SavePlus toolset for Maya 2025
 
 import re
 import os
+import shutil
 import time
 import json
 from datetime import datetime
@@ -724,35 +725,24 @@ def create_backup(current_file=None):
     backup_filename = os.path.basename(backup_path)
     directory = os.path.dirname(current_file)
     
-    # Save a copy
+    # Save current scene state first, then copy to the versioned backup path.
+    # Using shutil.copy2 keeps the current Maya session intact — no file
+    # open/close disruption and no loss of in-progress work.
     try:
-        # Save current file first
-        cmds.file(save=True)
-        
-        # Use Maya's correct syntax for file copying
-        if backup_path.lower().endswith('.ma'):
-            cmds.file(current_file, o=True, force=True)
-            cmds.file(rename=backup_path)
-            cmds.file(save=True, type="mayaAscii")
-            # Reopen the original file to return to previous state
-            cmds.file(current_file, o=True, force=True)
-        elif backup_path.lower().endswith('.mb'):
-            cmds.file(current_file, o=True, force=True)
-            cmds.file(rename=backup_path)
-            cmds.file(save=True, type="mayaBinary")
-            # Reopen the original file to return to previous state
-            cmds.file(current_file, o=True, force=True)
+        # Flush current changes to disk
+        if current_file.lower().endswith('.ma'):
+            cmds.file(save=True, type='mayaAscii')
+        elif current_file.lower().endswith('.mb'):
+            cmds.file(save=True, type='mayaBinary')
         else:
-            # Default to Maya ASCII
-            cmds.file(current_file, o=True, force=True)
-            cmds.file(rename=backup_path)
-            cmds.file(save=True, type="mayaAscii")
-            # Reopen the original file to return to previous state
-            cmds.file(current_file, o=True, force=True)
-        
+            cmds.file(save=True)
+
+        # Copy the saved file to the versioned backup path
+        shutil.copy2(current_file, backup_path)
+
         message = f"Backup saved as: {backup_filename}"
         print(message)
-        
+
         return True, message, backup_path
     except Exception as e:
         message = f"Error creating backup: {e}"

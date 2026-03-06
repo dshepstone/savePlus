@@ -281,7 +281,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             backup_button.setMinimumHeight(40)
             backup_button.setStyleSheet(button_style)
             backup_button.clicked.connect(self.create_backup)
-            backup_button.setToolTip("Create a timestamped backup copy of the current file.\n\nExample: scene_v01_backup_20260123_143022.ma\n\nUseful before making major changes.")
+            backup_button.setToolTip("Save a versioned backup copy of the current file.\n\nExample: scene_122.ma → scene_123.ma\n\nUseful before making major changes.")
 
             buttons_layout.addWidget(save_button)
             buttons_layout.addWidget(save_new_button)
@@ -1183,7 +1183,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Enable auto-backup
             self.pref_enable_auto_backup = QCheckBox("Enable automatic backups")
             self.pref_enable_auto_backup.setChecked(self.load_option_var(self.OPT_VAR_ENABLE_AUTO_BACKUP, False))
-            self.pref_enable_auto_backup.setToolTip("Automatically create timestamped backup files at regular intervals")
+            self.pref_enable_auto_backup.setToolTip("Automatically version up and save a backup copy of your scene at regular intervals")
             backup_layout.addWidget(self.pref_enable_auto_backup)
             backup_layout.addWidget(create_help_label("When enabled, SavePlus will automatically create backup copies of your scene at the specified interval."))
 
@@ -1202,7 +1202,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             backup_interval_layout.addWidget(self.pref_backup_interval)
             backup_interval_layout.addStretch()
             backup_layout.addLayout(backup_interval_layout)
-            backup_layout.addWidget(create_help_label("Backups are created in the same folder as your scene file with a timestamp suffix."))
+            backup_layout.addWidget(create_help_label("Backups are saved by versioning up the existing filename (e.g. scene_122.ma → scene_123.ma)."))
 
             # Max backups to keep
             max_backup_layout = QHBoxLayout()
@@ -1833,7 +1833,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         shortcuts = [
             ("Ctrl+S", "Save Plus - Increment the current file"),
             ("Ctrl+Shift+S", "Save As New - Save with a new name"),
-            ("Ctrl+B", "Create Backup - Create a timestamped backup"),
+            ("Ctrl+B", "Create Backup - Save a versioned backup copy"),
         ]
         
         # Create message with shortcuts
