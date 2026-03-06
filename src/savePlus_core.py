@@ -669,24 +669,60 @@ def load_option_var(name, default_value):
         debug_print(f"Error loading option var {name}: {e}")
         return default_value
 
+def compute_next_version_path(file_path):
+    """
+    Compute the next versioned file path by incrementing the trailing number
+    in the filename, preserving the existing naming scheme.
+
+    Example:
+        A03_David_Shepstone_blocking_wip_122.ma
+        -> A03_David_Shepstone_blocking_wip_123.ma
+    """
+    directory = os.path.dirname(file_path)
+    base_name, ext = os.path.splitext(os.path.basename(file_path))
+
+    # Find the last number in the base name and increment it
+    match = re.search(r'^(.*?)(\d+)(\D*)$', base_name)
+    if match:
+        prefix = match.group(1)
+        number = match.group(2)
+        suffix = match.group(3)
+        new_number = str(int(number) + 1).zfill(len(number))
+        new_base_name = prefix + new_number + suffix
+    else:
+        # No number found — append "02" to signal the first backup version
+        new_base_name = base_name + "02"
+
+    new_path = os.path.join(directory, new_base_name + ext)
+    return normalize_path(new_path)
+
+
 def create_backup(current_file=None):
-    """Create a backup copy of the current file"""
+    """Create a backup copy of the current file using the existing naming scheme.
+
+    The backup filename is produced by incrementing the trailing version number
+    in the current filename (e.g. _122 -> _123) so that backups stay consistent
+    with the project's naming convention.
+    """
     print("Creating backup...")
-    
+
     # Check if file is saved
     if not current_file:
         current_file = cmds.file(query=True, sceneName=True)
-        
+
     if not current_file:
         print("ERROR: File must be saved at least once before creating a backup")
         return False, "Error: File must be saved at least once before creating a backup", ""
-    
-    # Create backup filename - add "_backup" and timestamp
+
+    # Compute the next versioned filename using the existing naming scheme
+    backup_path = compute_next_version_path(current_file)
+
+    # If the computed path already exists keep incrementing until we find a free slot
+    while os.path.exists(backup_path):
+        backup_path = compute_next_version_path(backup_path)
+
+    backup_filename = os.path.basename(backup_path)
     directory = os.path.dirname(current_file)
-    base_name, ext = os.path.splitext(os.path.basename(current_file))
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_filename = f"{base_name}_backup_{timestamp}{ext}"
-    backup_path = os.path.join(directory, backup_filename)
     
     # Save a copy
     try:

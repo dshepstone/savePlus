@@ -79,15 +79,21 @@ def launch_save_plus():
         # Import the modules
         core, ui, main = import_modules()
         
-        # Check for existing UI window
+        # Check for existing UI window or workspace control
         for obj in cmds.lsUI(windows=True):
             if obj.startswith('SavePlusUI'):
                 print(f"Closing existing SavePlus window: {obj}")
                 cmds.deleteUI(obj)
-        
-        # Create and show the UI
+
+        # Also close any existing docked workspace control
+        workspace_control = 'SavePlusUIWorkspaceControl'
+        if cmds.workspaceControl(workspace_control, exists=True):
+            print(f"Closing existing SavePlus workspace control: {workspace_control}")
+            cmds.deleteUI(workspace_control)
+
+        # Create and show the UI as a floating dockable window
         save_plus_ui = main.SavePlusUI()
-        save_plus_ui.show()
+        save_plus_ui.show(dockable=True, floating=True)
         
         # Return the UI instance to avoid garbage collection
         print(f"SavePlus v{core.VERSION} loaded successfully!")
