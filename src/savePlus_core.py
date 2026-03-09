@@ -676,8 +676,8 @@ def compute_next_version_path(file_path):
     in the filename, preserving the existing naming scheme.
 
     Example:
-        A03_David_Shepstone_blocking_wip_122.ma
-        -> A03_David_Shepstone_blocking_wip_123.ma
+        A03_Smith_John_blocking_wip_122.ma
+        -> A03_Smith_John_blocking_wip_123.ma
     """
     directory = os.path.dirname(file_path)
     base_name, ext = os.path.splitext(os.path.basename(file_path))

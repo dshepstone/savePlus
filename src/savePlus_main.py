@@ -528,7 +528,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.compact_name_checkbox.setChecked(bool(self.load_option_var(self.OPT_VAR_COMPACT_NAME, 0)))
             self.compact_name_checkbox.setToolTip(
                 "Generate a shorter filename using abbreviations:\n"
-                "  \u2022 First name \u2192 initial only  (David \u2192 D)\n"
+                "  \u2022 First name \u2192 initial only  (John \u2192 J)\n"
                 "  \u2022 Stage \u2192 abbreviation  (blocking \u2192 blk,  blocking plus \u2192 blk+)\n"
                 "  \u2022 Status \u2192 single letter  (wip \u2192 w,  final \u2192 f)\n\n"
                 "Recommended when syncing to cloud storage or Windows systems\n"
