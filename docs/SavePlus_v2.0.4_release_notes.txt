@@ -1,0 +1,168 @@
+================================================================================
+SavePlus v2.0.4 — Release Notes
+Released: March 9, 2026
+Release tag: latest_release
+Release title: SavePlus_v2.0.4
+================================================================================
+
+WHAT'S NEW
+----------
+
+1. COMPACT NAME MODE (Name Generator)
+--------------------------------------
+The Name Generator now includes a "Compact Name" checkbox. When enabled it
+produces a shorter filename that stays readable but works reliably with cloud
+storage services and Windows' 260-character total path limit.
+
+  Full format:     A03_Smith_John_blocking_wip_01     (31 chars)
+  Compact format:  A03_Smith_J_blk_w_01               (20 chars)
+
+Abbreviation rules applied in compact mode:
+  - First name     -> initial only         (John -> J)
+  - blocking       -> blk
+  - blocking plus  -> blk+
+  - spline         -> spln
+  - polish         -> pls
+  - layout         -> lay
+  - planning       -> pln
+  - lighting       -> lgt
+  - final (stage)  -> fnl
+  - wip (status)   -> w
+  - final (status) -> f
+
+A live "Compact Preview" row updates in real time as you change any field,
+showing the shortened name before you click Generate. The checkbox state is
+saved as a Maya optionVar and persists between sessions.
+
+Hovering the checkbox shows a tooltip with the full abbreviation rules and
+platform-specific filename length limits:
+
+  Platform           Limit
+  -----------------  ------------------------------------
+  Windows            255 chars filename (260 total path)
+  macOS / Linux      255 bytes
+  Google Drive       255 chars
+  OneDrive           255 chars
+  Dropbox            260-char total path limit
+
+  Recommended safe target: keep filenames under 64 characters.
+
+
+2. SHELF BUTTON — HOT RELOAD & NO DUPLICATES
+---------------------------------------------
+The shelf button now reloads all SavePlus modules on every click so that any
+file changes take effect immediately without restarting Maya.
+
+Reload order (dependency-safe):
+  savePlus_maya -> savePlus_core -> savePlus_ui_components
+  -> savePlus_main -> savePlus_launcher
+
+The installer (install_saveplus.py / install_saveplus.mel) now checks whether
+a SavePlus shelf button already exists on the current shelf before creating
+one. If a button is found it is updated in place rather than adding a
+duplicate. This works regardless of whether the original button was created by
+the drag-and-drop installer or by SavePlus itself via install_shelf_button().
+
+Both files use a shared identifier ("SavePlus_v1_ToolButton") embedded in the
+button annotation so either code path can locate an existing button.
+
+
+3. IN-PANEL BUTTON HELP TEXT
+-----------------------------
+A compact three-row reference block now appears directly below the three main
+save buttons on the SavePlus tab. Each row names the button in slightly
+brighter text followed by a plain one-sentence description of what it does.
+
+  Save Plus      Increments the version number and saves a new copy.
+                 Your previous version is kept.
+
+  Save As New    Saves with the exact filename shown — no increment.
+                 Use this to start a new file or lock in a specific name.
+
+  Create Backup  Saves a separate backup copy without changing your
+                 current file. Run this before making large changes.
+
+
+4. DOCKED PANEL — SCROLL SUPPORT
+----------------------------------
+The Project tab and History tab now wrap their content in QScrollArea widgets.
+Previously, docking the panel at a reduced height would clip the lower
+sections (Rename Project, Create New Project, Version History controls) with
+no way to scroll to them.
+
+All tab content is now accessible via scroll when the panel is docked:
+  - Project tab: Current Project, Project Scenes, Set Existing Project,
+                 Rename Project, Create New Project
+  - History tab: Recent Files, Version History
+
+The minimum window height has been reduced from 450 px to 200 px so the panel
+can shrink naturally when docked while scroll areas maintain access to all
+controls.
+
+The SavePlus tab and Preferences tab already had scroll areas from the
+previous release and are unaffected.
+
+
+================================================================================
+PLATFORM FILENAME LENGTH REFERENCE
+================================================================================
+
+  Platform           Filename limit    Notes
+  -----------------  ----------------  -----------------------------------------
+  Windows            255 characters    Full path (drive + folders + file) capped
+                                       at 260 characters by default (MAX_PATH)
+  macOS              255 bytes         UTF-8 encoded
+  Linux              255 bytes         Most filesystems (ext4, xfs, etc.)
+  Google Drive       255 characters
+  OneDrive           255 characters    Full path up to 400 characters
+  Dropbox            260-char path     Applies to the full synced path
+
+  Recommended safe target: keep filenames under 64 characters to leave
+  sufficient room for deep folder structures, especially on Windows and Dropbox.
+
+
+================================================================================
+DOWNLOAD
+================================================================================
+
+  ZIP:  https://github.com/dshepstone/savePlus/releases/download/latest_release/SavePlus_v2.0.4.zip
+  Tag:  latest_release
+  Title: SavePlus_v2.0.4
+
+
+================================================================================
+INSTALLATION
+================================================================================
+
+Automatic (recommended):
+  1. Download and extract SavePlus_v2.0.4.zip
+  2. Open Maya 2025
+  3. Drag install_saveplus.mel into Maya's viewport
+  4. Follow the on-screen prompts
+  5. Click the SavePlus shelf button to launch
+
+Manual:
+  1. Copy the following files to your Maya scripts directory:
+       __init__.py
+       savePlus_core.py
+       savePlus_maya.py
+       savePlus_ui_components.py
+       savePlus_main.py
+       savePlus_launcher.py
+  2. Copy saveplus.png to your Maya prefs/icons directory
+  3. In Maya's Script Editor run:
+       import savePlus_launcher
+       savePlus_launcher.install_shelf_button()
+
+Scripts directory locations:
+  Windows:  C:/Users/<username>/Documents/maya/scripts
+  macOS:    /Users/<username>/Library/Preferences/Autodesk/maya/scripts
+  Linux:    /home/<username>/maya/scripts
+
+System requirements:
+  - Maya 2025 (primary support; Maya 2023/2024 may work with limited features)
+  - PySide6 (included with Maya 2025)
+  - Windows 10/11 / macOS 12+ / Linux (CentOS/Rocky 8.6+)
+
+
+================================================================================

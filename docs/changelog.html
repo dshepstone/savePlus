@@ -468,7 +468,7 @@
                     </div>
                     <div>
                         <span class="logo-text">SavePlus</span>
-                        <span class="logo-version">v1.3.1</span>
+                        <span class="logo-version">v2.0.4</span>
                     </div>
                 </a>
                 <nav>
@@ -499,7 +499,8 @@
             <div class="quick-nav">
                 <h3>Jump to Version</h3>
                 <ul>
-                    <li><a href="#v1.2.2">v1.2.2 (Latest)</a></li>
+                    <li><a href="#v2.0.4">v2.0.4 (Latest)</a></li>
+                    <li><a href="#v1.2.2">v1.2.2</a></li>
                     <li><a href="#v1.2.1">v1.2.1</a></li>
                     <li><a href="#v1.2.0">v1.2.0</a></li>
                     <li><a href="#original">Original MEL Script</a></li>
@@ -509,17 +510,80 @@
             <div class="changelog-container">
                 <h2>Version History</h2>
 
-                <!-- Version 1.2.2 -->
-                <div id="v1.2.2" class="version-entry">
+                <!-- Version 2.0.4 -->
+                <div id="v2.0.4" class="version-entry">
                     <div class="version-header">
                         <div class="version-dot latest">
                             <i class="fas fa-star"></i>
                         </div>
                         <div class="version-info">
                             <div class="version-title">
+                                <h3>Version 2.0.4</h3>
+                                <span class="version-badge minor">Minor Release</span>
+                                <span class="version-badge latest">Latest</span>
+                            </div>
+                            <div class="version-meta">
+                                <span><i class="far fa-calendar-alt"></i> Released: March 9, 2026</span>
+                                <span> | </span>
+                                <span><i class="fas fa-code-branch"></i> <a
+                                        href="https://github.com/dshepstone/savePlus/releases/tag/latest_release"
+                                        target="_blank">GitHub Release</a></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="version-content">
+                        <div class="change-category">
+                            <h4><i class="fas fa-plus-circle"></i> New Features</h4>
+                            <ul>
+                                <li><strong>Compact Name mode</strong> in the Name Generator — a new checkbox generates
+                                    shorter filenames using abbreviations (e.g. <span class="highlight">A03_Smith_J_blk_w_01</span>
+                                    instead of <span class="highlight">A03_Smith_John_blocking_wip_01</span>) for
+                                    compatibility with cloud storage and Windows path limits. A live Compact Preview
+                                    row updates as you type.</li>
+                                <li><strong>In-panel button help text</strong> — a concise three-row reference block
+                                    below the Save Plus / Save As New / Create Backup buttons explains each button's
+                                    function at a glance without needing to hover or open documentation.</li>
+                            </ul>
+                        </div>
+                        <div class="change-category">
+                            <h4><i class="fas fa-wrench"></i> Improvements</h4>
+                            <ul>
+                                <li><strong>Shelf button hot-reload</strong> — clicking the shelf button now reloads
+                                    all SavePlus modules so file updates take effect immediately without restarting Maya.</li>
+                                <li><strong>No duplicate shelf buttons</strong> — the installer now detects an existing
+                                    SavePlus button and updates it in place rather than adding a duplicate to the shelf.</li>
+                                <li><strong>Docked panel scroll support</strong> — the Project and History tabs now
+                                    wrap their content in scroll areas so all sections remain accessible when the panel
+                                    is docked at a reduced height.</li>
+                                <li>Minimum panel height reduced from 450 px to 200 px for better docking behaviour.</li>
+                            </ul>
+                        </div>
+                        <div class="download-links">
+                            <a href="https://github.com/dshepstone/savePlus/releases/download/latest_release/SavePlus_v2.0.4.zip"
+                                class="download-button">
+                                <i class="fas fa-download"></i> Download ZIP
+                            </a>
+                        </div>
+                        <div class="migration-notes">
+                            <h5><i class="fas fa-exchange-alt"></i> Upgrading from v1.3.1</h5>
+                            <p>Re-run the drag-and-drop installer (<code>install_saveplus.mel</code>) to update your
+                                scripts directory and shelf button in one step. If a SavePlus shelf button already
+                                exists on your shelf it will be updated automatically — no duplicate will be created.
+                                All existing preferences and version history are preserved.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Version 1.2.2 -->
+                <div id="v1.2.2" class="version-entry">
+                    <div class="version-header">
+                        <div class="version-dot">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="version-info">
+                            <div class="version-title">
                                 <h3>Version 1.2.2</h3>
                                 <span class="version-badge patch">Patch Release</span>
-                                <span class="version-badge latest">Latest</span>
                             </div>
                             <div class="version-meta">
                                 <span><i class="far fa-calendar-alt"></i> Released: April 2, 2025</span>
@@ -549,7 +613,7 @@
                             </ul>
                         </div>
                         <div class="download-links">
-                            <a href="https://github.com/dshepstone/savePlus/releases/download/v1.3.1/SavePlus_v1.3.1.zip"
+                            <a href="https://github.com/dshepstone/savePlus/releases/download/latest_release/SavePlus_v2.0.4.zip"
                                 class="download-button">
                                 <i class="fas fa-download"></i> Download ZIP
                             </a>
@@ -608,7 +672,7 @@
                             </ul>
                         </div>
                         <div class="download-links">
-                            <a href="https://github.com/dshepstone/savePlus/releases/download/v1.3.1/SavePlus_v1.3.1.zip"
+                            <a href="https://github.com/dshepstone/savePlus/releases/download/latest_release/SavePlus_v2.0.4.zip"
                                 class="download-button">
                                 <i class="fas fa-download"></i> Download ZIP
                             </a>
@@ -681,7 +745,7 @@
                             </ul>
                         </div>
                         <div class="download-links">
-                            <a href="https://github.com/dshepstone/savePlus/releases/download/v1.3.1/SavePlus_v1.3.1.zip"
+                            <a href="https://github.com/dshepstone/savePlus/releases/download/latest_release/SavePlus_v2.0.4.zip"
                                 class="download-button">
                                 <i class="fas fa-download"></i> Download ZIP
                             </a>
