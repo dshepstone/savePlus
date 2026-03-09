@@ -3050,10 +3050,10 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         status_abbr = self.STATUS_ABBREVIATIONS.get(version_status, version_status[0])
 
         parts = [f"{assignment_letter}{assignment_num}"]
-        if first_initial:
-            parts.append(first_initial)
         if last_name:
             parts.append(last_name)
+        if first_initial:
+            parts.append(first_initial)
         parts.append(stage_abbr)
         parts.append(status_abbr)
         parts.append(version_num)
