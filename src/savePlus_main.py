@@ -112,7 +112,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Set window properties
             self.setWindowTitle("SavePlus")
             self.setMinimumWidth(550)
-            self.setMinimumHeight(450)
+            self.setMinimumHeight(200)
             
             # Set application-wide tooltip style
             self.setStyleSheet("""
@@ -800,7 +800,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.saveplus_layout.addWidget(self.scroll_area)
             
             # --- PROJECT TAB CONTENT ---
-            
+
+            # Create scroll area so project tab content is accessible when docked
+            project_scroll = QScrollArea()
+            project_scroll.setWidgetResizable(True)
+            project_scroll.setFrameShape(QFrame.NoFrame)
+            project_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+            project_container = QWidget()
+            project_container_layout = QVBoxLayout(project_container)
+            project_container_layout.setContentsMargins(0, 0, 0, 0)
+            project_container_layout.setSpacing(10)
+
             # Current project status
             current_project_group = QGroupBox("Current Project")
             current_project_layout = QVBoxLayout(current_project_group)
@@ -945,12 +956,15 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             create_project_layout.addRow("", self.project_name_preview)
             create_project_layout.addRow("", create_project_button)
             
-            self.project_layout.addWidget(current_project_group)
-            self.project_layout.addWidget(project_scenes_group)
-            self.project_layout.addWidget(existing_project_group)
-            self.project_layout.addWidget(rename_project_group)
-            self.project_layout.addWidget(create_project_group)
-            self.project_layout.addStretch()
+            project_container_layout.addWidget(current_project_group)
+            project_container_layout.addWidget(project_scenes_group)
+            project_container_layout.addWidget(existing_project_group)
+            project_container_layout.addWidget(rename_project_group)
+            project_container_layout.addWidget(create_project_group)
+            project_container_layout.addStretch()
+
+            project_scroll.setWidget(project_container)
+            self.project_layout.addWidget(project_scroll)
             
             self.project_prefix_letter_combo.currentIndexChanged.connect(self.update_project_name_preview)
             self.project_prefix_number_spinbox.valueChanged.connect(self.update_project_name_preview)
@@ -959,7 +973,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.update_project_name_preview()
             
             # --- HISTORY TAB CONTENT ---
-            
+
+            # Create scroll area so history tab content is accessible when docked
+            history_scroll = QScrollArea()
+            history_scroll.setWidgetResizable(True)
+            history_scroll.setFrameShape(QFrame.NoFrame)
+            history_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+            history_container = QWidget()
+            history_container_layout = QVBoxLayout(history_container)
+            history_container_layout.setContentsMargins(0, 0, 0, 0)
+            history_container_layout.setSpacing(8)
+
             # Create Recent Files group at the top of History tab
             recent_files_group = QGroupBox("Recent Files")
             recent_files_layout = QVBoxLayout(recent_files_group)
@@ -1064,9 +1089,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             version_history_layout.addWidget(self.history_table)
             version_history_layout.addLayout(history_controls)
             
-            # Add both sections to history tab
-            self.history_layout.addWidget(recent_files_group)
-            self.history_layout.addWidget(version_history_group)
+            # Add both sections to history container, then add scroll area to tab
+            history_container_layout.addWidget(recent_files_group)
+            history_container_layout.addWidget(version_history_group)
+
+            history_scroll.setWidget(history_container)
+            self.history_layout.addWidget(history_scroll)
             
             # --- PREFERENCES TAB CONTENT ---
 
