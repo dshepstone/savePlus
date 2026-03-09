@@ -307,6 +307,42 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Add top save buttons to container layout
             self.container_layout.addLayout(buttons_layout)
 
+            # Button help text — concise one-liner per button
+            button_help = QLabel(
+                "<table style='border-spacing:0; color:#999999; font-size:10px;'>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Save Plus</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Increments the version number and saves a new copy. "
+                    "Your previous version is kept."
+                  "</td>"
+                "</tr>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Save As New</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Saves with the exact filename shown — no increment. "
+                    "Use this to start a new file or lock in a specific name."
+                  "</td>"
+                "</tr>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Create Backup</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Saves a separate backup copy without changing your current file. "
+                    "Run this before making large changes."
+                  "</td>"
+                "</tr>"
+                "</table>"
+            )
+            button_help.setWordWrap(True)
+            button_help.setContentsMargins(2, 2, 2, 2)
+            self.container_layout.addWidget(button_help)
+
             # Last save indicator and status
             last_save_layout = QHBoxLayout()
             last_save_layout.setContentsMargins(4, 2, 4, 2)
