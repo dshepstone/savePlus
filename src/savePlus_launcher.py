@@ -220,8 +220,25 @@ def install_shelf_button(maya_icons_dir=None):
                     except:
                         pass
         
-        # Command for the shelf button
+        # Command for the shelf button — reloads all modules so file updates
+        # take effect without restarting Maya.
         button_command = """
+import importlib
+import sys
+import maya.cmds as cmds
+
+scriptsDir = cmds.internalVar(userScriptDir=True)
+if scriptsDir not in sys.path:
+    sys.path.insert(0, scriptsDir)
+
+for _mod in ['savePlus_maya', 'savePlus_core', 'savePlus_ui_components',
+             'savePlus_main', 'savePlus_launcher']:
+    if _mod in sys.modules:
+        try:
+            importlib.reload(sys.modules[_mod])
+        except Exception as _e:
+            print(f"SavePlus: warning reloading {_mod}: {_e}")
+
 import savePlus_launcher
 savePlus_launcher.launch_save_plus()
 """
@@ -241,18 +258,26 @@ savePlus_launcher.launch_save_plus()
             # Use just the filename for Maya shelf buttons, not the full path
             icon_path = "saveplus.png"
         
+        shelf_annotation = f'SavePlus - Intelligent File Versioning Tool [{UNIQUE_IDENTIFIER}]'
+
         # Create or update button
         if existing_button:
-            cmds.shelfButton(existing_button, edit=True, command=button_command, image=icon_path)
+            cmds.shelfButton(existing_button, edit=True,
+                             command=button_command,
+                             image=icon_path,
+                             image1=icon_path,
+                             annotation=shelf_annotation,
+                             sourceType='python')
             print(f"Updated existing SavePlus shelf button with icon: {icon_path}")
         else:
-            button = cmds.shelfButton(
-                    label='SavePlus',
-                    annotation=f'Launch SavePlus - {UNIQUE_IDENTIFIER}',
-                    image=icon_path,
-                    command=button_command,
-                    sourceType='python',
-                    parent=current_shelf)
+            cmds.shelfButton(
+                label='SavePlus',
+                annotation=shelf_annotation,
+                image=icon_path,
+                image1=icon_path,
+                command=button_command,
+                sourceType='python',
+                parent=current_shelf)
             print(f"SavePlus shelf button created with icon: {icon_path}")
         
         return True

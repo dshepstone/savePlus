@@ -106,18 +106,25 @@ def _onMayaDropped():
 # SavePlus
 # -----------------------------------
 
+import importlib
 import sys
-import os
 import maya.cmds as cmds
 
-# Get Maya scripts directory
-scriptsDir = cmds.internalVar(userScriptDir=True)
-
 # Ensure the scripts directory is in the Python path
+scriptsDir = cmds.internalVar(userScriptDir=True)
 if scriptsDir not in sys.path:
-    sys.path.append(scriptsDir)
+    sys.path.insert(0, scriptsDir)
 
-# Launch SavePlus
+# Reload all SavePlus modules so any file updates take effect
+# without needing to restart Maya.
+for _mod in ['savePlus_maya', 'savePlus_core', 'savePlus_ui_components',
+             'savePlus_main', 'savePlus_launcher']:
+    if _mod in sys.modules:
+        try:
+            importlib.reload(sys.modules[_mod])
+        except Exception as _e:
+            print(f"SavePlus: warning reloading {_mod}: {_e}")
+
 try:
     import savePlus_launcher
     savePlus_launcher.launch_save_plus()
@@ -125,23 +132,51 @@ except Exception as e:
     cmds.warning(f"Error launching SavePlus: {str(e)}")
     raise
 '''
-        
+
+        # Unique identifier embedded in the annotation so both the installer
+        # and savePlus_launcher can find the button without creating duplicates.
+        UNIQUE_IDENTIFIER = "SavePlus_v1_ToolButton"
+
         # Get the current shelf
         shelf = maya.mel.eval('$gShelfTopLevel=$gShelfTopLevel')
         parent = maya.cmds.tabLayout(shelf, query=True, selectTab=True)
-        
-        # Create the shelf button
-        maya.cmds.shelfButton(
-            command=command,
-            annotation='SavePlus - Intelligent File Versioning Tool',
-            sourceType='Python',
-            image=iconPath,
-            image1=iconPath,
-            label='SavePlus',
-            parent=parent
-        )
-        
-        print("SavePlus shelf button created successfully.")
+
+        # Check for an existing SavePlus shelf button and update it rather
+        # than adding a duplicate to the shelf.
+        existing_button = None
+        if maya.cmds.shelfLayout(parent, exists=True):
+            shelf_buttons = maya.cmds.shelfLayout(parent, query=True, childArray=True) or []
+            for btn in shelf_buttons:
+                if maya.cmds.shelfButton(btn, exists=True):
+                    try:
+                        annotation = maya.cmds.shelfButton(btn, query=True, annotation=True) or ""
+                        if UNIQUE_IDENTIFIER in annotation:
+                            existing_button = btn
+                            break
+                    except Exception:
+                        pass
+
+        if existing_button:
+            maya.cmds.shelfButton(
+                existing_button,
+                edit=True,
+                command=command,
+                image=iconPath,
+                image1=iconPath,
+                sourceType='Python',
+            )
+            print("SavePlus shelf button updated successfully.")
+        else:
+            maya.cmds.shelfButton(
+                command=command,
+                annotation=f'SavePlus - Intelligent File Versioning Tool [{UNIQUE_IDENTIFIER}]',
+                sourceType='Python',
+                image=iconPath,
+                image1=iconPath,
+                label='SavePlus',
+                parent=parent,
+            )
+            print("SavePlus shelf button created successfully.")
         
         # Verify the installation
         installSuccess = True
@@ -164,7 +199,7 @@ except Exception as e:
             )
         else:
             # Installation successful
-            successMsg = "SavePlus has been successfully installed!\n\nA button has been added to your current shelf."
+            successMsg = "SavePlus has been successfully installed!\n\nA shelf button has been created or updated on your current shelf."
             
             # Ask if user wants to launch SavePlus now
             result = maya.cmds.confirmDialog(

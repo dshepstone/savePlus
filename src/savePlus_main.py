@@ -103,6 +103,23 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
     OPT_VAR_MAX_BACKUPS = "SavePlusMaxBackups"
     OPT_VAR_SHOW_SAVE_CONFIRMATION = "SavePlusShowSaveConfirmation"
     OPT_VAR_AUTO_INCREMENT_VERSION = "SavePlusAutoIncrementVersion"
+    OPT_VAR_COMPACT_NAME = "SavePlusCompactName"
+
+    # Stage abbreviations used for compact filenames
+    STAGE_ABBREVIATIONS = {
+        "layout": "lay",
+        "planning": "pln",
+        "blocking": "blk",
+        "blocking plus": "blk+",
+        "spline": "spln",
+        "polish": "pls",
+        "lighting": "lgt",
+        "final": "fnl",
+    }
+    STATUS_ABBREVIATIONS = {
+        "wip": "w",
+        "final": "f",
+    }
     
     def __init__(self, parent=None):
         try:
@@ -112,7 +129,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             # Set window properties
             self.setWindowTitle("SavePlus")
             self.setMinimumWidth(550)
-            self.setMinimumHeight(450)
+            self.setMinimumHeight(200)
             
             # Set application-wide tooltip style
             self.setStyleSheet("""
@@ -289,6 +306,42 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Add top save buttons to container layout
             self.container_layout.addLayout(buttons_layout)
+
+            # Button help text — concise one-liner per button
+            button_help = QLabel(
+                "<table style='border-spacing:0; color:#999999; font-size:10px;'>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Save Plus</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Increments the version number and saves a new copy. "
+                    "Your previous version is kept."
+                  "</td>"
+                "</tr>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Save As New</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Saves with the exact filename shown — no increment. "
+                    "Use this to start a new file or lock in a specific name."
+                  "</td>"
+                "</tr>"
+                "<tr>"
+                  "<td style='padding:2px 8px 2px 2px; white-space:nowrap;'>"
+                    "<span style='color:#CCCCCC; font-weight:bold;'>Create Backup</span>"
+                  "</td>"
+                  "<td style='padding:2px 0;'>"
+                    "Saves a separate backup copy without changing your current file. "
+                    "Run this before making large changes."
+                  "</td>"
+                "</tr>"
+                "</table>"
+            )
+            button_help.setWordWrap(True)
+            button_help.setContentsMargins(2, 2, 2, 2)
+            self.container_layout.addWidget(button_help)
 
             # Last save indicator and status
             last_save_layout = QHBoxLayout()
@@ -470,12 +523,40 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             name_gen_buttons_layout.addWidget(reset_button)
 
             # Add all to form layout
+            # Compact name checkbox
+            self.compact_name_checkbox = QCheckBox("Compact Name")
+            self.compact_name_checkbox.setChecked(bool(self.load_option_var(self.OPT_VAR_COMPACT_NAME, 0)))
+            self.compact_name_checkbox.setToolTip(
+                "Generate a shorter filename using abbreviations:\n"
+                "  \u2022 First name \u2192 initial only  (John \u2192 J)\n"
+                "  \u2022 Stage \u2192 abbreviation  (blocking \u2192 blk,  blocking plus \u2192 blk+)\n"
+                "  \u2022 Status \u2192 single letter  (wip \u2192 w,  final \u2192 f)\n\n"
+                "Recommended when syncing to cloud storage or Windows systems\n"
+                "with long folder paths.\n\n"
+                "Max filename lengths by platform:\n"
+                "  Windows:      255 chars (full path capped at 260)\n"
+                "  macOS/Linux:  255 bytes\n"
+                "  Google Drive: 255 chars\n"
+                "  OneDrive:     255 chars\n"
+                "  Dropbox:      260-char total path\n\n"
+                "Safe target: keep filenames under 64 characters."
+            )
+            compact_checkbox_row = QHBoxLayout()
+            compact_checkbox_row.addWidget(self.compact_name_checkbox)
+            compact_checkbox_row.addStretch()
+
+            # Live compact preview label (always shows what the compact name would look like)
+            self.compact_filename_preview = QLabel("\u2014")
+            self.compact_filename_preview.setStyleSheet("color: #5599CC; font-style: italic;")
+
             name_gen_layout.addRow("Assignment:", assignment_layout)
             name_gen_layout.addRow("Last Name:", self.lastname_input)
             name_gen_layout.addRow("First Name:", self.firstname_input)
             name_gen_layout.addRow("Stage:", pipeline_stage_layout)
             name_gen_layout.addRow("Version:", version_number_layout)
             name_gen_layout.addRow("Preview:", self.filename_preview)
+            name_gen_layout.addRow("", compact_checkbox_row)
+            name_gen_layout.addRow("Compact:", self.compact_filename_preview)
             name_gen_layout.addRow("", name_gen_buttons_layout)
 
             self.name_gen_section.add_widget(name_gen)
@@ -483,6 +564,21 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             # Add name_gen_section toggled signal connection
             self.name_gen_section.toggled.connect(self.adjust_window_size)
+
+            # Connect all name generator inputs to the live compact preview
+            for signal in [
+                self.assignment_letter_combo.currentIndexChanged,
+                self.assignment_spinbox.valueChanged,
+                self.pipeline_stage_combo.currentIndexChanged,
+                self.version_status_combo.currentIndexChanged,
+                self.version_number_spinbox.valueChanged,
+            ]:
+                signal.connect(self._update_compact_preview)
+            self.lastname_input.textChanged.connect(self._update_compact_preview)
+            self.firstname_input.textChanged.connect(self._update_compact_preview)
+
+            # Trigger initial compact preview population
+            self._update_compact_preview()
 
             # Create File Options section (collapsed by default - advanced settings)
             self.file_options_section = savePlus_ui_components.ZurbriggStyleCollapsibleFrame("File Options", collapsed=True)
@@ -655,6 +751,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.filetype_combo.setStyleSheet("padding: 6px;")
             self.filetype_combo.currentIndexChanged.connect(self.update_filename_preview)
             self.filetype_combo.currentIndexChanged.connect(self.update_version_preview)
+            self.filetype_combo.currentIndexChanged.connect(self._update_compact_preview)
             self.filetype_combo.setToolTip("Choose the file format for saving:\n\n• Maya ASCII (.ma): Human-readable, larger file size, good for version control\n• Maya Binary (.mb): Smaller file size, faster to save/load")
             file_type_layout.addWidget(self.filetype_combo)
             file_layout.addWidget(file_type_section)
@@ -800,7 +897,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.saveplus_layout.addWidget(self.scroll_area)
             
             # --- PROJECT TAB CONTENT ---
-            
+
+            # Create scroll area so project tab content is accessible when docked
+            project_scroll = QScrollArea()
+            project_scroll.setWidgetResizable(True)
+            project_scroll.setFrameShape(QFrame.NoFrame)
+            project_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+            project_container = QWidget()
+            project_container_layout = QVBoxLayout(project_container)
+            project_container_layout.setContentsMargins(0, 0, 0, 0)
+            project_container_layout.setSpacing(10)
+
             # Current project status
             current_project_group = QGroupBox("Current Project")
             current_project_layout = QVBoxLayout(current_project_group)
@@ -945,12 +1053,15 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             create_project_layout.addRow("", self.project_name_preview)
             create_project_layout.addRow("", create_project_button)
             
-            self.project_layout.addWidget(current_project_group)
-            self.project_layout.addWidget(project_scenes_group)
-            self.project_layout.addWidget(existing_project_group)
-            self.project_layout.addWidget(rename_project_group)
-            self.project_layout.addWidget(create_project_group)
-            self.project_layout.addStretch()
+            project_container_layout.addWidget(current_project_group)
+            project_container_layout.addWidget(project_scenes_group)
+            project_container_layout.addWidget(existing_project_group)
+            project_container_layout.addWidget(rename_project_group)
+            project_container_layout.addWidget(create_project_group)
+            project_container_layout.addStretch()
+
+            project_scroll.setWidget(project_container)
+            self.project_layout.addWidget(project_scroll)
             
             self.project_prefix_letter_combo.currentIndexChanged.connect(self.update_project_name_preview)
             self.project_prefix_number_spinbox.valueChanged.connect(self.update_project_name_preview)
@@ -959,7 +1070,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             self.update_project_name_preview()
             
             # --- HISTORY TAB CONTENT ---
-            
+
+            # Create scroll area so history tab content is accessible when docked
+            history_scroll = QScrollArea()
+            history_scroll.setWidgetResizable(True)
+            history_scroll.setFrameShape(QFrame.NoFrame)
+            history_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+            history_container = QWidget()
+            history_container_layout = QVBoxLayout(history_container)
+            history_container_layout.setContentsMargins(0, 0, 0, 0)
+            history_container_layout.setSpacing(8)
+
             # Create Recent Files group at the top of History tab
             recent_files_group = QGroupBox("Recent Files")
             recent_files_layout = QVBoxLayout(recent_files_group)
@@ -1064,9 +1186,12 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             version_history_layout.addWidget(self.history_table)
             version_history_layout.addLayout(history_controls)
             
-            # Add both sections to history tab
-            self.history_layout.addWidget(recent_files_group)
-            self.history_layout.addWidget(version_history_group)
+            # Add both sections to history container, then add scroll area to tab
+            history_container_layout.addWidget(recent_files_group)
+            history_container_layout.addWidget(version_history_group)
+
+            history_scroll.setWidget(history_container)
+            self.history_layout.addWidget(history_scroll)
             
             # --- PREFERENCES TAB CONTENT ---
 
@@ -2946,6 +3071,43 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         if warning_dialog.get_disable_warnings():
             self.enable_timed_warning.setChecked(False)
     
+    def _build_compact_filename(self):
+        """Return the compact filename string based on current name generator inputs."""
+        assignment_letter = self.assignment_letter_combo.currentText()
+        assignment_num = str(self.assignment_spinbox.value()).zfill(2)
+        last_name = self.lastname_input.text().strip()
+        first_name = self.firstname_input.text().strip()
+        pipeline_stage = self.pipeline_stage_combo.currentText().lower()
+        version_status = self.version_status_combo.currentText().lower()
+        version_num = str(self.version_number_spinbox.value()).zfill(2)
+
+        first_initial = first_name[0].upper() if first_name else ""
+        stage_abbr = self.STAGE_ABBREVIATIONS.get(pipeline_stage, pipeline_stage[:4])
+        status_abbr = self.STATUS_ABBREVIATIONS.get(version_status, version_status[0])
+
+        parts = [f"{assignment_letter}{assignment_num}"]
+        if last_name:
+            parts.append(last_name)
+        if first_initial:
+            parts.append(first_initial)
+        parts.append(stage_abbr)
+        parts.append(status_abbr)
+        parts.append(version_num)
+        return "_".join(parts)
+
+    def _update_compact_preview(self):
+        """Refresh the compact filename preview label."""
+        if not hasattr(self, 'compact_filename_preview'):
+            return
+        last_name = self.lastname_input.text().strip()
+        first_name = self.firstname_input.text().strip()
+        if last_name or first_name:
+            filetype_idx = self.filetype_combo.currentIndex() if hasattr(self, 'filetype_combo') else 0
+            ext = '.ma' if filetype_idx == 0 else '.mb'
+            self.compact_filename_preview.setText(self._build_compact_filename() + ext)
+        else:
+            self.compact_filename_preview.setText("\u2014")
+
     def generate_filename(self):
         """Generate a filename based on the name generator inputs"""
         assignment_letter = self.assignment_letter_combo.currentText()
@@ -2963,13 +3125,18 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         version_num = str(self.version_number_spinbox.value()).zfill(2)
         
         if not last_name or not first_name:
-            QMessageBox.warning(self, "Missing Information", 
+            QMessageBox.warning(self, "Missing Information",
                             "Please enter both Last Name and First Name")
             return
-        
-        # Format: X##_LastName_FirstName_stage_status_## (where X is the assignment letter)
-        # Example: J02_Smith_John_layout_wip_01
-        new_filename = f"{assignment_letter}{assignment_num}_{last_name}_{first_name}_{version_type}_{version_num}"
+
+        # Build filename — compact or full depending on checkbox
+        use_compact = hasattr(self, 'compact_name_checkbox') and self.compact_name_checkbox.isChecked()
+        if use_compact:
+            new_filename = self._build_compact_filename()
+        else:
+            # Format: X##_LastName_FirstName_stage_status_## (where X is the assignment letter)
+            # Example: J02_Smith_John_layout_wip_01
+            new_filename = f"{assignment_letter}{assignment_num}_{last_name}_{first_name}_{version_type}_{version_num}"
         
         # Update the filename input - using the update_filename_display method to properly handle the path
         if hasattr(self, 'update_filename_display') and callable(self.update_filename_display):
@@ -3009,13 +3176,16 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
         self.version_status_combo.setCurrentIndex(0)  # Default to WIP
         
         self.version_number_spinbox.setValue(1)
-        
+        if hasattr(self, 'compact_name_checkbox'):
+            self.compact_name_checkbox.setChecked(False)
+
         # Update preview
         self.update_filename_preview()
-        
+        self._update_compact_preview()
+
         # Save settings
         self.save_name_generator_settings()
-        
+
         print("Name generator reset to defaults")
     
     def update_filename_preview(self):
@@ -3297,6 +3467,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             cmds.optionVar(sv=(self.OPT_VAR_VERSION_TYPE, self.version_status_combo.currentText()))
             
             cmds.optionVar(iv=(self.OPT_VAR_VERSION_NUMBER, self.version_number_spinbox.value()))
+            if hasattr(self, 'compact_name_checkbox'):
+                cmds.optionVar(iv=(self.OPT_VAR_COMPACT_NAME, int(self.compact_name_checkbox.isChecked())))
         except Exception as e:
             savePlus_core.debug_print(f"Error saving name generator settings: {e}")
     
