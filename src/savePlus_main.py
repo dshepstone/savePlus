@@ -111,8 +111,8 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             
             # Set window properties
             self.setWindowTitle("SavePlus")
-            self.setMinimumWidth(550)
-            self.setMinimumHeight(450)
+            self.setMinimumWidth(350)
+            self.setMinimumHeight(200)
             
             # Set application-wide tooltip style
             self.setStyleSheet("""
@@ -834,6 +834,7 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
 
             self.project_scenes_list = QListWidget()
             self.project_scenes_list.setAlternatingRowColors(True)
+            self.project_scenes_list.setMaximumHeight(150)
             self.project_scenes_list.setToolTip("Scenes in the current project's scenes folder")
             self.project_scenes_list.itemSelectionChanged.connect(self.update_project_scenes_controls)
             self.project_scenes_list.itemDoubleClicked.connect(self.open_selected_project_scene)
@@ -945,12 +946,26 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             create_project_layout.addRow("", self.project_name_preview)
             create_project_layout.addRow("", create_project_button)
             
-            self.project_layout.addWidget(current_project_group)
-            self.project_layout.addWidget(project_scenes_group)
-            self.project_layout.addWidget(existing_project_group)
-            self.project_layout.addWidget(rename_project_group)
-            self.project_layout.addWidget(create_project_group)
-            self.project_layout.addStretch()
+            # Wrap all project groups in a scroll area so content is accessible when docked
+            project_scroll_container = QWidget()
+            project_scroll_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
+            project_scroll_container_layout = QVBoxLayout(project_scroll_container)
+            project_scroll_container_layout.setContentsMargins(0, 0, 0, 0)
+            project_scroll_container_layout.setSpacing(10)
+            project_scroll_container_layout.addWidget(current_project_group)
+            project_scroll_container_layout.addWidget(project_scenes_group)
+            project_scroll_container_layout.addWidget(existing_project_group)
+            project_scroll_container_layout.addWidget(rename_project_group)
+            project_scroll_container_layout.addWidget(create_project_group)
+            project_scroll_container_layout.addStretch()
+
+            self.project_scroll_area = QScrollArea()
+            self.project_scroll_area.setWidgetResizable(True)
+            self.project_scroll_area.setFrameShape(QFrame.NoFrame)
+            self.project_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.project_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.project_scroll_area.setWidget(project_scroll_container)
+            self.project_layout.addWidget(self.project_scroll_area)
             
             self.project_prefix_letter_combo.currentIndexChanged.connect(self.update_project_name_preview)
             self.project_prefix_number_spinbox.valueChanged.connect(self.update_project_name_preview)
@@ -1064,9 +1079,22 @@ class SavePlusUI(MayaQWidgetDockableMixin, QMainWindow):
             version_history_layout.addWidget(self.history_table)
             version_history_layout.addLayout(history_controls)
             
-            # Add both sections to history tab
-            self.history_layout.addWidget(recent_files_group)
-            self.history_layout.addWidget(version_history_group)
+            # Add both sections to history tab wrapped in a scroll area for docked mode
+            history_scroll_container = QWidget()
+            history_scroll_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
+            history_scroll_container_layout = QVBoxLayout(history_scroll_container)
+            history_scroll_container_layout.setContentsMargins(0, 0, 0, 0)
+            history_scroll_container_layout.setSpacing(8)
+            history_scroll_container_layout.addWidget(recent_files_group)
+            history_scroll_container_layout.addWidget(version_history_group)
+
+            self.history_scroll_area = QScrollArea()
+            self.history_scroll_area.setWidgetResizable(True)
+            self.history_scroll_area.setFrameShape(QFrame.NoFrame)
+            self.history_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+            self.history_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.history_scroll_area.setWidget(history_scroll_container)
+            self.history_layout.addWidget(self.history_scroll_area)
             
             # --- PREFERENCES TAB CONTENT ---
 
