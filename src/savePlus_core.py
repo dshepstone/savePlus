@@ -12,7 +12,7 @@ from datetime import datetime
 from savePlus_maya import cmds
 
 # Constants
-VERSION = "1.3.1"
+VERSION = "2.0.4"
 DEBUG_MODE = True
 DEFAULT_PROJECT_DIRS = [
     "assets",

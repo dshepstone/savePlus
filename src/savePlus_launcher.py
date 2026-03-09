@@ -18,7 +18,7 @@ import shutil
 from savePlus_maya import cmds, mel
 
 # Version for this launcher
-VERSION = "1.3.1"
+VERSION = "2.0.4"
 
 def setup_import_paths():
     """Setup import paths for SavePlus modules"""
