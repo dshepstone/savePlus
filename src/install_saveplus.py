@@ -39,10 +39,11 @@ def _onMayaDropped():
         
         # Get Maya scripts directory
         scriptsDir = maya.cmds.internalVar(userScriptDir=True)
-        
-        # Get Maya icons directory
-        mayaDir = os.path.dirname(os.path.dirname(scriptsDir))
-        iconsDir = os.path.join(mayaDir, "prefs", "icons")
+
+        # Get Maya icons directory via Maya's own variable so the path is always
+        # correct regardless of drive letter, Documents location, or Maya version.
+        prefsDir = maya.cmds.internalVar(userPrefsDir=True)
+        iconsDir = os.path.join(prefsDir, "icons")
         
         # Create icons directory if it doesn't exist
         if not os.path.exists(iconsDir):
